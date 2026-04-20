@@ -1,7 +1,37 @@
 #!/usr/bin/env bash
-echo '
-[kiro_repo]
+
+# Exit on error, undefined variables, and pipe failures
+set -Euo pipefail
+
+# Source common library
+if [[ -f /usr/local/lib/kiro-common.sh ]]; then
+    source /usr/local/lib/kiro-common.sh
+else
+    echo "ERROR: kiro-common.sh not found" >&2
+    exit 1
+fi
+
+log_section "Adding kiro_repo to pacman.conf"
+
+# Check if already present
+if grep -q "^\[kiro_repo\]" /etc/pacman.conf; then
+    log_success "kiro_repo already present in pacman.conf"
+    exit 0
+fi
+
+# Add the repository
+log_subsection "Appending kiro_repo to pacman.conf"
+echo '\n[kiro_repo]
 SigLevel = Never
-Server = https://kirodubes.github.io/$repo/$arch
-' | sudo tee --append /etc/pacman.conf
-sudo pacman -Syyu
+Server = https://kirodubes.github.io/$repo/$arch' | sudo tee -a /etc/pacman.conf >/dev/null || {
+    log_warn "Failed to append kiro_repo to pacman.conf"
+    exit 1
+}
+
+log_subsection "Updating pacman databases"
+sudo pacman -Syyu --noconfirm || {
+    log_warn "Failed to update pacman databases"
+    exit 1
+}
+
+log_success "kiro_repo successfully added and databases updated"

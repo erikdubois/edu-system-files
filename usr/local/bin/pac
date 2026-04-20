@@ -1,21 +1,41 @@
 #!/bin/bash
 
+# Exit on error, undefined variables, and pipe failures
+set -Euo pipefail
+
+# Source common library
+if [[ -f /usr/local/lib/kiro-common.sh ]]; then
+    source /usr/local/lib/kiro-common.sh
+else
+    echo "ERROR: kiro-common.sh not found" >&2
+    exit 1
+fi
+
 # Check if an argument is provided
-if [ -z "$1" ]; then
-    echo "Usage: $0 <number_of_parallel_downloads>"
+if [[ -z "${1:-}" ]]; then
+    log_warn "Usage: $0 <number_of_parallel_downloads>"
     exit 1
 fi
 
 # Validate that the argument is a positive integer
 if ! [[ "$1" =~ ^[0-9]+$ ]]; then
-    echo "Error: Argument must be a positive integer."
+    log_error "$LINENO" "Invalid argument"
+    echo "Error: Argument must be a positive integer." >&2
     exit 1
 fi
 
-# Store the input in a variable
-PARALLEL_DOWNLOADS=$1
+PARALLEL_DOWNLOADS="$1"
+
+log_subsection "Setting ParallelDownloads to ${PARALLEL_DOWNLOADS}"
+
+# Escape the value for sed
+local escaped_value
+escaped_value=$(printf '%s\n' "${PARALLEL_DOWNLOADS}" | sed -e 's/[&\\]/\\\\&/g')
 
 # Use sed to update the ParallelDownloads setting in /etc/pacman.conf
-sudo sed -i "s/^#*ParallelDownloads = .*/ParallelDownloads = ${PARALLEL_DOWNLOADS}/" /etc/pacman.conf
-
-echo "Updated ParallelDownloads to ${PARALLEL_DOWNLOADS} in /etc/pacman.conf"
+if sudo sed -i "s/^#*ParallelDownloads = .*/ParallelDownloads = ${escaped_value}/" /etc/pacman.conf; then
+    log_success "ParallelDownloads updated to ${PARALLEL_DOWNLOADS} in /etc/pacman.conf"
+else
+    log_warn "Failed to update ParallelDownloads"
+    exit 1
+fi

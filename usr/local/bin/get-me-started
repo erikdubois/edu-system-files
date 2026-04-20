@@ -1,5 +1,16 @@
 #!/bin/bash
-#set -e
+
+# Exit on error, undefined variables, and pipe failures
+set -Euo pipefail
+
+# Source common library
+if [[ -f /usr/local/lib/kiro-common.sh ]]; then
+    source /usr/local/lib/kiro-common.sh
+else
+    echo "ERROR: kiro-common.sh not found" >&2
+    exit 1
+fi
+
 ##################################################################################################################
 # Author    : Erik Dubois
 # Website   : https://www.erikdubois.be
@@ -27,24 +38,23 @@
 ##################################################################################################################
 
 tput setaf 3;
-echo "###############################################################################"
-echo "###      SCRIPT TO REMOVE ELEMENTS WITH NO QUESTIONS ASKED"
-echo "###"
-echo "###      - KEEP LINUX KERNEL GET RID OF THE OTHER KERNELS"
-echo "###      - GET RID OF BROADCOM AND REALTEK DRIVERS"
-echo "###      - GET RID OF CONKYS"
-echo "###############################################################################"
+log_section "SCRIPT TO REMOVE ELEMENTS WITH NO QUESTIONS ASKED"
+echo "- KEEP LINUX KERNEL, GET RID OF OTHER KERNELS"
+echo "- GET RID OF BROADCOM AND REALTEK DRIVERS"
+echo "- GET RID OF CONKYS"
 tput sgr0
 
 #######broadcom and realtek
 
+# Remove packages by name
 remove_drivers() {
+    local package
     for package in "$@"; do
-        if pacman -Q "$package" &>/dev/null; then
-            echo "$package is installed. Removing..."
-            sudo pacman -Rns --noconfirm "$package"
+        if pacman -Q "${package}" &>/dev/null; then
+            log_subsection "Removing ${package}"
+            sudo pacman -Rns --noconfirm "${package}" || log_warn "Failed to remove ${package}"
         else
-            echo "$package is not installed."
+            log_info "${package} is not installed"
         fi
     done
 }
