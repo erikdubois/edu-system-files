@@ -26,6 +26,12 @@ fi
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
 ##################################################################################################################
+
+# Parse common arguments
+parse_common_args "edu-fix-pacman-conf" "1.0.0" \
+    "Download and update pacman.conf from local or github" \
+    "[OPTIONS]" \
+    "    (no additional options)"
 #tput setaf 0 = black 
 #tput setaf 1 = red 
 #tput setaf 2 = green
@@ -37,69 +43,40 @@ fi
 #tput setaf 8 = light blue
 ##################################################################################################################
 
-log_section "Getting latest /etc/pacman.conf"
+log_section "Getting /etc/pacman.conf"
 
-Online=0
-file_boolean=0
+local_pacman="/usr/local/share/kiro/pacman.conf"
+github_url="https://raw.githubusercontent.com/erikdubois/arcolinux-nemesis/refs/heads/master/pacman.conf"
 
-function check_connectivity() {
-
-    local test_ip
-    local test_count
-
-    test_ip="8.8.8.8"
-    test_count=1
-
-    if ping -c ${test_count} ${test_ip} > /dev/null; then
-       echo "You have internet connectivity"
-       Online=1
-    else
-       echo "You do not have connectivity"
-       Online=0
-    fi
- }
-
-function check_file() {
-
-	local file="/usr/local/share/edu/pacman.conf"
-	if [[ -f "${file}" ]]; then
-    	log_success "File exists: ${file}"
-    	file_boolean=1
-	else
-    	log_info "File not found: ${file}"
-    	file_boolean=0
-	fi
-}
-
-check_connectivity
-check_file
-
-
-# pacman config + online
-if [[ "${Online}" -eq 1 ]]; then
-	log_subsection "Downloading latest /etc/pacman.conf from github"
-	if sudo wget https://raw.githubusercontent.com/erikdubois/arcolinux-nemesis/refs/heads/master/pacman.conf -O /etc/pacman.conf; then
-		log_success "pacman.conf downloaded successfully"
-	else
-		log_warn "Failed to download pacman.conf"
-		return 1
-	fi
-fi
-
-# pacman config + not online
-if [[ "${Online}" -eq 0 ]] && [[ "${file_boolean}" -eq 1 ]]; then
+# Priority 1: Check for local pacman.conf first (no internet needed)
+if [[ -f "${local_pacman}" ]]; then
 	log_subsection "Using local pacman.conf"
-	sudo cp /usr/local/share/edu/pacman.conf /etc/pacman.conf || {
-		log_warn "Failed to copy pacman.conf"
-		return 1
-	}
-	log_success "pacman.conf saved from local system"
+	if sudo cp "${local_pacman}" /etc/pacman.conf; then
+		log_success "pacman.conf copied from local system"
+		exit 0
+	else
+		log_warn "Failed to copy local pacman.conf"
+		exit 1
+	fi
 fi
 
-# No local or online config available
-if [[ "${Online}" -eq 0 ]] && [[ "${file_boolean}" -eq 0 ]]; then
-	log_warn "No configuration available. Run this script once you are back online."
-	return 1
+
+# Priority 2: Local not found, try to download
+log_info "Local pacman.conf not found at: ${local_pacman}"
+log_subsection "Checking internet connectivity"
+
+if check_connectivity 3 8.8.8.8; then
+	log_subsection "Downloading latest pacman.conf from github"
+	if sudo wget "${github_url}" -O /etc/pacman.conf; then
+		log_success "pacman.conf downloaded successfully"
+		exit 0
+	else
+		log_warn "Failed to download pacman.conf from github"
+		exit 1
+	fi
+else
+	log_error "$LINENO" "No internet connectivity"
+	log_warn "Cannot proceed: no local file and no internet"
+	exit 1
 fi
 
-log_success "Script completed successfully"

@@ -11,6 +11,12 @@ else
     exit 1
 fi
 
+# Parse common arguments
+parse_common_args "add-kiro" "1.0.0" \
+    "Add the kiro_repo to pacman.conf" \
+    "[OPTIONS]" \
+    "    (no additional options)"
+
 log_section "Adding kiro_repo to pacman.conf"
 
 # Check if already present
@@ -21,17 +27,29 @@ fi
 
 # Add the repository
 log_subsection "Appending kiro_repo to pacman.conf"
-echo '\n[kiro_repo]
-SigLevel = Never
-Server = https://kirodubes.github.io/$repo/$arch' | sudo tee -a /etc/pacman.conf >/dev/null || {
-    log_warn "Failed to append kiro_repo to pacman.conf"
-    exit 1
-}
 
-log_subsection "Updating pacman databases"
-sudo pacman -Syyu --noconfirm || {
-    log_warn "Failed to update pacman databases"
-    exit 1
-}
+if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would add blank line and kiro_repo section to pacman.conf"
+    log_info "[DRY-RUN] Would update pacman databases"
+else
+    # Add blank line before repo section
+    echo "" | sudo tee -a /etc/pacman.conf >/dev/null || {
+        log_warn "Failed to add blank line"
+        exit 1
+    }
+
+    # Add repo configuration
+    printf '[kiro_repo]\nSigLevel = Never\nServer = https://kirodubes.github.io/$repo/$arch\n' | \
+    sudo tee -a /etc/pacman.conf >/dev/null || {
+        log_warn "Failed to append kiro_repo to pacman.conf"
+        exit 1
+    }
+
+    log_subsection "Updating pacman databases"
+    sudo pacman -Syyu --noconfirm || {
+        log_warn "Failed to update pacman databases"
+        exit 1
+    }
+fi
 
 log_success "kiro_repo successfully added and databases updated"

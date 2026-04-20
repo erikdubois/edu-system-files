@@ -232,6 +232,101 @@ comment_out_patterns_in_file() {
     done
 }
 
+# Show help message for a script
+show_help() {
+    local script_name="$1"
+    local description="$2"
+    local usage="$3"
+    local options="$4"
+    
+    cat <<EOF
+${BOLD}${GREEN}${script_name}${RESET} - ${description}
+
+${BOLD}Usage:${RESET}
+    ${script_name} ${usage}
+
+${BOLD}Options:${RESET}
+    -h, --help          Show this help message and exit
+    -v, --version       Show version information and exit
+    -d, --dry-run       Show what would be done without making changes
+    ${options}
+
+${BOLD}Examples:${RESET}
+    ${script_name} --help
+    ${script_name} --version
+    ${script_name} --dry-run [other arguments]
+
+For more information, visit: https://www.arcolinux.info
+EOF
+}
+
+# Show version information
+show_version() {
+    local script_name="$1"
+    local version="${2:-1.0.0}"
+    
+    echo "${BOLD}${GREEN}${script_name}${RESET} version ${version}"
+    echo "Created: 2026-04-20"
+    echo "Based on: arcolinux-nemesis/common/common.sh"
+    echo "Website: https://www.arcolinux.info"
+}
+
+# Parse common arguments (--help, --version, --dry-run)
+parse_common_args() {
+    local script_name="$1"
+    local version="$2"
+    local description="$3"
+    local usage="$4"
+    local options="${5:-}"
+    
+    # Global variable to track dry-run mode
+    DRY_RUN="false"
+    
+    # Check for help/version flags
+    case "${1:-}" in
+        -h|--help)
+            show_help "${script_name}" "${description}" "${usage}" "${options}"
+            exit 0
+            ;;
+        -v|--version)
+            show_version "${script_name}" "${version}"
+            exit 0
+            ;;
+        -d|--dry-run)
+            DRY_RUN="true"
+            log_info "DRY-RUN MODE: No changes will be made"
+            # Shift to remove --dry-run from $@
+            shift
+            ;;
+    esac
+}
+
+# Execute command with dry-run support
+execute_or_dryrun() {
+    local description="$1"
+    shift
+    local cmd=("$@")
+    
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "[DRY-RUN] Would execute: ${description}"
+        log_info "[DRY-RUN] Command: ${cmd[*]}"
+    else
+        "${cmd[@]}"
+    fi
+}
+
+# Confirm operation, respecting dry-run mode
+confirm_with_dryrun() {
+    local prompt="$1"
+    
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "[DRY-RUN] ${prompt}"
+        return 0
+    fi
+    
+    confirm_yes_no "${prompt}"
+}
+
 ##################################################################################################################################
 # 6. Package Helpers
 ##################################################################################################################################

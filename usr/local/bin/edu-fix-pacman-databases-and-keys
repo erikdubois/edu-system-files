@@ -26,6 +26,12 @@ fi
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
 ##################################################################################################################
+
+# Parse common arguments
+parse_common_args "edu-fix-pacman-databases-and-keys" "1.0.0" \
+    "Fix pacman database and GPG key issues" \
+    "[OPTIONS]" \
+    "    (no additional options)"
 #tput setaf 0 = black 
 #tput setaf 1 = red 
 #tput setaf 2 = green

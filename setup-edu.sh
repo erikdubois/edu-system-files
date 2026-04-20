@@ -3,6 +3,14 @@
 # Exit on error, undefined variables, and pipe failures
 set -Euo pipefail
 
+# Source common library
+if [[ -f /usr/local/lib/kiro-common.sh ]]; then
+    source /usr/local/lib/kiro-common.sh
+else
+    echo "ERROR: kiro-common.sh not found" >&2
+    exit 1
+fi
+
 ##################################################################################################################
 # Written to be used on 64 bits computers
 # Author 	: 	Erik Dubois
@@ -13,6 +21,15 @@ set -Euo pipefail
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
 ##################################################################################################################
+
+# Parse common arguments
+parse_common_args "setup-edu.sh" "1.0.0" \
+    "Set up git configuration for edu-system-files repository" \
+    "[OPTIONS]" \
+    "    (no additional options)"
+
+# Remove processed flags from $@ if needed
+shift $((OPTIND - 1)) 2>/dev/null || true
 
 # Problem solving commands
 
