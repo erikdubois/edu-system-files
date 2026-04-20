@@ -31,7 +31,8 @@ fi
 parse_common_args "edu-fix-pacman-conf" "1.0.0" \
     "Download and update pacman.conf from local or github" \
     "[OPTIONS]" \
-    "    (no additional options)"
+    "    (no additional options)" \
+    "$@"
 #tput setaf 0 = black 
 #tput setaf 1 = red 
 #tput setaf 2 = green

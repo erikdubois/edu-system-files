@@ -26,10 +26,8 @@ fi
 parse_common_args "setup-edu.sh" "1.0.0" \
     "Set up git configuration for edu-system-files repository" \
     "[OPTIONS]" \
-    "    (no additional options)"
-
-# Remove processed flags from $@ if needed
-shift $((OPTIND - 1)) 2>/dev/null || true
+    "    (no additional options)" \
+    "$@"
 
 # Problem solving commands
 

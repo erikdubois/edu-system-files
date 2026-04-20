@@ -15,7 +15,8 @@ fi
 parse_common_args "pac" "1.0.0" \
     "Set the number of parallel downloads in pacman.conf" \
     "<number_of_downloads> [OPTIONS]" \
-    "    (no additional options)"
+    "    (no additional options)" \
+    "$@"
 
 # Check if an argument is provided
 if [[ -z "${1:-}" ]]; then

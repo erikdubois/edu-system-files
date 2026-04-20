@@ -15,7 +15,8 @@ fi
 parse_common_args "add-kiro" "1.0.0" \
     "Add the kiro_repo to pacman.conf" \
     "[OPTIONS]" \
-    "    (no additional options)"
+    "    (no additional options)" \
+    "$@"
 
 log_section "Adding kiro_repo to pacman.conf"
 

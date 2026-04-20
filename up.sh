@@ -24,10 +24,8 @@ fi
 parse_common_args "up.sh" "1.0.0" \
     "Push changes to the edu-system-files repository" \
     "[OPTIONS]" \
-    "    (no additional options)"
-
-# Remove processed flags from $@ if needed
-shift $((OPTIND - 1)) 2>/dev/null || true
+    "    (no additional options)" \
+    "$@"
 #tput setaf 0 = black
 #tput setaf 1 = red
 #tput setaf 2 = green
