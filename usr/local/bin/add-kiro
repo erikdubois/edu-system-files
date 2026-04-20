@@ -11,16 +11,8 @@ else
     exit 1
 fi
 
-# Parse common arguments
-parse_common_args "add-kiro" "1.0.0" \
-    "Add the kiro_repo to pacman.conf" \
-    "[OPTIONS]" \
-    "    (no additional options)" \
-    "$@"
-
-log_section "Adding kiro_repo to pacman.conf"
-
 # Check if already present
+
 if grep -q "^\[kiro_repo\]" /etc/pacman.conf; then
     log_success "kiro_repo already present in pacman.conf"
     exit 0

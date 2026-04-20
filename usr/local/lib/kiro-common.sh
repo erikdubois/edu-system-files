@@ -271,39 +271,6 @@ show_version() {
     echo "Website: https://www.arcolinux.info"
 }
 
-# Parse common arguments (--help, --version, --dry-run)
-# Usage: parse_common_args "script_name" "version" "description" "usage" "options" "$@"
-parse_common_args() {
-    local script_name="$1"
-    local version="$2"
-    local description="$3"
-    local usage="$4"
-    local options="$5"
-    shift 5
-    local script_args=("$@")
-    
-    # Global variable to track dry-run mode
-    DRY_RUN="false"
-    
-    # Check for help/version flags in the actual script arguments
-    if (( ${#script_args[@]} > 0 )); then
-        case "${script_args[0]}" in
-            -h|--help)
-                show_help "${script_name}" "${description}" "${usage}" "${options}"
-                exit 0
-                ;;
-            -v|--version)
-                show_version "${script_name}" "${version}"
-                exit 0
-                ;;
-            -d|--dry-run)
-                DRY_RUN="true"
-                log_info "DRY-RUN MODE: No changes will be made"
-                ;;
-        esac
-    fi
-}
-
 # Execute command with dry-run support
 execute_or_dryrun() {
     local description="$1"

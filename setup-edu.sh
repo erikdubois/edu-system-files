@@ -12,35 +12,6 @@ else
 fi
 
 ##################################################################################################################
-# Written to be used on 64 bits computers
-# Author 	: 	Erik Dubois
-# Website 	: 	http://www.erikdubois.be
-##################################################################################################################
-##################################################################################################################
-#
-#   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
-#
-##################################################################################################################
-
-# Parse common arguments
-parse_common_args "setup-edu.sh" "1.0.0" \
-    "Set up git configuration for edu-system-files repository" \
-    "[OPTIONS]" \
-    "    (no additional options)" \
-    "$@"
-
-# Problem solving commands
-
-# Read before using it.
-# https://www.atlassian.com/git/tutorials/undoing-changes/git-reset
-# git reset --hard orgin/master
-# ONLY if you are very sure and no coworkers are on your github.
-
-# Command that have helped in the past
-# Force git to overwrite local files on pull - no merge
-# git fetch all
-# git push --set-upstream origin master
-# git reset --hard orgin/master
 
 project=$(basename "$(pwd)")
 echo "-----------------------------------------------------------------------------"
