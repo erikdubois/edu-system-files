@@ -22,7 +22,7 @@ file_boolean=0
 
 function check_file() {
 
-	file="/usr/local/share/edu/gpg.conf"
+	file="/usr/local/share/kiro/gpg.conf"
 	if [[ -f $file ]];then
     	echo $file " exists"
     	file_boolean=1
@@ -36,7 +36,7 @@ check_file
 
 # pacman gpg config + not online
 if [ $file_boolean -eq 1 ] ; then
-	sudo cp /usr/local/share/edu/gpg.conf /etc/pacman.d/gnupg/gpg.conf
+	sudo cp /usr/local/share/kiro/gpg.conf /etc/pacman.d/gnupg/gpg.conf
 	echo "/etc/pacman.d/gnupg/gpg.conf copied from local system"
 fi
 
