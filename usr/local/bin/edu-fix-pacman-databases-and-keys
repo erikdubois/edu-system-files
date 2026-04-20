@@ -27,12 +27,6 @@ fi
 
 log_section "Fixing pacman database and GPG configuration"
 
-# Confirm before proceeding
-if ! confirm_destructive_operation "fix pacman database and GPG keys"; then
-	log_warn "Operation cancelled"
-	exit 0
-fi
-
 log_subsection "Removing pacman sync databases"
 if [[ -d /var/lib/pacman/sync ]]; then
 	sudo rm -f /var/lib/pacman/sync/*.db /var/lib/pacman/sync/*.db.sig || log_warn "Failed to remove all sync databases"
