@@ -1,5 +1,8 @@
 #!/bin/bash
-#set -e
+
+# Exit on error, undefined variables, and pipe failures
+set -Euo pipefail
+
 ##################################################################################################################
 # Author    : Erik Dubois
 # Website   : https://www.erikdubois.be

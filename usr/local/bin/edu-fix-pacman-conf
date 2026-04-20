@@ -1,5 +1,16 @@
 #!/bin/bash
-#set -e
+
+# Exit on error, undefined variables, and pipe failures
+set -Euo pipefail
+
+# Source common library
+if [[ -f /usr/local/lib/kiro-common.sh ]]; then
+    source /usr/local/lib/kiro-common.sh
+else
+    echo "ERROR: kiro-common.sh not found" >&2
+    exit 1
+fi
+
 ##################################################################################################################
 # Author    : Erik Dubois
 # Website   : https://www.erikdubois.be
@@ -26,9 +37,7 @@
 #tput setaf 8 = light blue
 ##################################################################################################################
 
-echo "###############################################################################"
-echo "Getting latest /etc/pacman.conf"
-echo "###############################################################################"
+log_section "Getting latest /etc/pacman.conf"
 
 Online=0
 file_boolean=0
@@ -52,12 +61,12 @@ function check_connectivity() {
 
 function check_file() {
 
-	file="/usr/local/share/edu/pacman.conf"
-	if [[ -f $file ]];then
-    	echo $file " exists"
+	local file="/usr/local/share/edu/pacman.conf"
+	if [[ -f "${file}" ]]; then
+    	log_success "File exists: ${file}"
     	file_boolean=1
 	else
-    	echo $file " doesn't exist"
+    	log_info "File not found: ${file}"
     	file_boolean=0
 	fi
 }
@@ -67,22 +76,30 @@ check_file
 
 
 # pacman config + online
-if [ $Online -eq 1 ] ; then
-	echo "getting latest /etc/pacman.conf from github"
-	sudo wget https://raw.githubusercontent.com/erikdubois/arcolinux-nemesis/refs/heads/master/pacman.conf -O /etc/pacman.conf
+if [[ "${Online}" -eq 1 ]]; then
+	log_subsection "Downloading latest /etc/pacman.conf from github"
+	if sudo wget https://raw.githubusercontent.com/erikdubois/arcolinux-nemesis/refs/heads/master/pacman.conf -O /etc/pacman.conf; then
+		log_success "pacman.conf downloaded successfully"
+	else
+		log_warn "Failed to download pacman.conf"
+		return 1
+	fi
 fi
 
 # pacman config + not online
-if [ $Online -eq 0 ] && [ $file_boolean -eq 1 ] ; then
-	sudo cp /usr/local/share/edu/pacman.conf /etc/pacman.conf
-	echo "/etc/pacman.conf saved from local system"
+if [[ "${Online}" -eq 0 ]] && [[ "${file_boolean}" -eq 1 ]]; then
+	log_subsection "Using local pacman.conf"
+	sudo cp /usr/local/share/edu/pacman.conf /etc/pacman.conf || {
+		log_warn "Failed to copy pacman.conf"
+		return 1
+	}
+	log_success "pacman.conf saved from local system"
 fi
 
-#putting old pacman config back
-if [ $Online -eq 0 ]  && [ $file_boolean -eq 0 ] ; then
-	echo "Run this script once you are back online"
+# No local or online config available
+if [[ "${Online}" -eq 0 ]] && [[ "${file_boolean}" -eq 0 ]]; then
+	log_warn "No configuration available. Run this script once you are back online."
+	return 1
 fi
 
-echo "###############################################################################"
-echo "###                DONE - YOU CAN CLOSE THIS WINDOW                        ####"
-echo "###############################################################################"
+log_success "Script completed successfully"

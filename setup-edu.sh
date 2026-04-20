@@ -1,5 +1,8 @@
 #!/bin/bash
-#
+
+# Exit on error, undefined variables, and pipe failures
+set -Euo pipefail
+
 ##################################################################################################################
 # Written to be used on 64 bits computers
 # Author 	: 	Erik Dubois
@@ -24,9 +27,9 @@
 # git push --set-upstream origin master
 # git reset --hard orgin/master
 
-project=$(basename `pwd`)
+project=$(basename "$(pwd)")
 echo "-----------------------------------------------------------------------------"
-echo "this is project https://github.com/erikdubois/"$project
+echo "this is project https://github.com/erikdubois/${project}"
 echo "-----------------------------------------------------------------------------"
 git config --global pull.rebase false
 git config --global user.name "Erik Dubois"

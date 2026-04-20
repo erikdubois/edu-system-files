@@ -1,5 +1,16 @@
 #!/bin/bash
-#set -e
+
+# Exit on error, undefined variables, and pipe failures
+set -Euo pipefail
+
+# Source common library
+if [[ -f /usr/local/lib/kiro-common.sh ]]; then
+    source /usr/local/lib/kiro-common.sh
+else
+    echo "ERROR: kiro-common.sh not found" >&2
+    exit 1
+fi
+
 ##################################################################################################################
 # Author 	: Erik Dubois
 # Website   : https://www.erikdubois.be
@@ -28,26 +39,35 @@
 
 #iso=arconet-kiro
 
-echo
-tput setaf 3
-echo "################################################################"
-echo "################### Start clone linux-kiro"
-echo "################################################################"
-tput sgr0
-echo
+log_section "Cloning linux-kiro repository"
 
-if test -f /usr/bin/git ; then
-	echo "git is present"
-	echo
+if ! command -v git &>/dev/null; then
+	log_subsection "Installing git"
+	sudo pacman -S git --noconfirm || {
+		log_warn "Failed to install git"
+		exit 1
+	}
 else
-	echo "We have installed git"
-	sudo pacman -S git --noconfirm
+	log_success "git is already installed"
 fi
 
-[ -d $HOME"/DATA" ] || mkdir -p $HOME"/DATA"
-cd ~/DATA
-git clone https://github.com/kirodubes/linux-kiro
+# Create and navigate to data directory
+mkdir -p "${HOME}/DATA" || {
+	log_warn "Failed to create directory: ${HOME}/DATA"
+	exit 1
+}
 
-echo "###############################################################################"
-echo "###                DONE - YOU CAN CLOSE THIS WINDOW                        ####"
-echo "###############################################################################"
+cd "${HOME}/DATA" || {
+	log_warn "Failed to change to directory: ${HOME}/DATA"
+	exit 1
+}
+
+log_subsection "Cloning linux-kiro repository"
+if git clone https://github.com/kirodubes/linux-kiro; then
+	log_success "Repository cloned successfully"
+else
+	log_warn "Failed to clone repository"
+	exit 1
+fi
+
+log_success "linux-kiro repository cloned successfully"

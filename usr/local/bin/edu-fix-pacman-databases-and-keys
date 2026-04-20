@@ -1,5 +1,16 @@
 #!/bin/bash
-#set -e
+
+# Exit on error, undefined variables, and pipe failures
+set -Euo pipefail
+
+# Source common library
+if [[ -f /usr/local/lib/kiro-common.sh ]]; then
+    source /usr/local/lib/kiro-common.sh
+else
+    echo "ERROR: kiro-common.sh not found" >&2
+    exit 1
+fi
+
 ##################################################################################################################
 # Author 	: Erik Dubois
 # Website   : https://www.erikdubois.be
@@ -28,89 +39,53 @@
 
 Online=0
 
-function check_connectivity() {
-
-    local test_ip
-    local test_count
-
-    test_ip="8.8.8.8"
-    test_count=1
-
-    if ping -c ${test_count} ${test_ip} > /dev/null; then
-       	tput setaf 2
-       	echo 
-       	echo "You are online"
-       	echo
-       	tput sgr0
-       	Online=1
-    else
-    	tput setaf 1
-    	echo
-       	echo "You are not connected to the internet"
-       	echo "We can not download the latest archlinux-keyring package"
-       	echo
-       	echo "Make sure you are online to retrieve packages"
-       	echo
-       	tput sgr0
-       	Online=0
-    fi
- }
-
-check_connectivity
-
-if [ $Online -eq 1 ] ; then
-	tput setaf 2
-	echo
-	echo "Installing the latest archlinux-keyring package from the internet"
-	echo
-	tput sgr0
-	sudo pacman -Sy archlinux-keyring --noconfirm
-	echo
+if check_connectivity 3 8.8.8.8; then
+	Online=1
+else
+	Online=0
 fi
 
-echo "###############################################################################"
-echo "Removing the pacman databases at /var/lib/pacman/sync/*"
-echo "###############################################################################"
-echo
-sudo rm /var/lib/pacman/sync/*
-echo
+if [[ "${Online}" -eq 1 ]]; then
+	log_subsection "Installing the latest archlinux-keyring package"
+	sudo pacman -Sy archlinux-keyring --noconfirm || log_warn "Failed to install archlinux-keyring"
+fi
 
-echo "###############################################################################"
-echo "Removing /etc/pacman.d/gnupg folder"
-echo "###############################################################################"
-echo
-sudo rm -rf /etc/pacman.d/gnupg/*
-echo
+log_section "Fixing pacman database and GPG configuration"
 
-echo "###############################################################################"
-echo "Initialize pacman keys with pacman-key --init"
-echo "###############################################################################"
-echo
-sudo pacman-key --init
-echo
+# Confirm before proceeding
+if ! confirm_destructive_operation "fix pacman database and GPG keys"; then
+	log_warn "Operation cancelled"
+	exit 0
+fi
 
-echo "###############################################################################"
-echo "Populating keyring with pacman-key --populate"
-echo "###############################################################################"
-echo 
-sudo pacman-key --populate
-echo
+log_subsection "Removing pacman sync databases"
+if [[ -d /var/lib/pacman/sync ]]; then
+	sudo rm -f /var/lib/pacman/sync/*.db /var/lib/pacman/sync/*.db.sig || log_warn "Failed to remove all sync databases"
+else
+	log_info "Directory not found: /var/lib/pacman/sync"
+fi
 
-echo "###############################################################################"
-echo "Adding Ubuntu keyserver to /etc/pacman.d/gnupg/gpg.conf"
-echo "###############################################################################"
-echo 
-echo "
-keyserver hkp://keyserver.ubuntu.com:80" | sudo tee --append /etc/pacman.d/gnupg/gpg.conf
+log_subsection "Removing pacman GPG keys"
+if [[ -d /etc/pacman.d/gnupg ]]; then
+	sudo rm -rf /etc/pacman.d/gnupg/* || log_warn "Failed to remove GPG keys"
+else
+	log_info "Directory not found: /etc/pacman.d/gnupg"
+fi
 
-echo
-echo "###############################################################################"
-echo "Getting new databases with pacman -Sy"
-echo "###############################################################################"
-echo 
-sudo pacman -Sy
-echo
+log_subsection "Initializing pacman keys"
+sudo pacman-key --init || log_warn "Failed to initialize pacman keys"
 
-echo "###############################################################################"
-echo "###                DONE - YOU CAN CLOSE THIS WINDOW                        ####"
-echo "###############################################################################"
+log_subsection "Populating keyring"
+sudo pacman-key --populate || log_warn "Failed to populate keyring"
+
+log_subsection "Adding Ubuntu keyserver to gpg.conf"
+if [[ -f /etc/pacman.d/gnupg/gpg.conf ]]; then
+	echo "keyserver hkp://keyserver.ubuntu.com:80" | sudo tee -a /etc/pacman.d/gnupg/gpg.conf >/dev/null
+else
+	log_warn "File not found: /etc/pacman.d/gnupg/gpg.conf"
+fi
+
+log_subsection "Refreshing pacman databases"
+sudo pacman -Sy || log_warn "Failed to refresh pacman databases"
+
+log_success "Pacman database and GPG configuration fixed"
