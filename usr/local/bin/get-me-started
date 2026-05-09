@@ -16,13 +16,20 @@ TARGET_USER="${SUDO_USER:-$USER}"
 
 tput setaf 3;
 log_section "SCRIPT TO REMOVE ELEMENTS WITH NO QUESTIONS ASKED"
-echo "- GET RID OF BROADCOM AND REALTEK DRIVERS"
+echo "- SETUP HQ MACHINE"
+echo "  - REMOVE BROADCOM AND REALTEK DRIVERS"
+echo "  - WRITE /etc/environment"
+echo "  - INSTALL GTK 3.0 AND 4.0 CONFIG"
+echo "  - SET ALACRITTY FONT SIZE TO 14"
 tput sgr0
 
-# Remove packages by name
-remove_drivers() {
+setup_hq() {
+    if [[ "$(hostname)" != "hq" ]]; then
+        return 0
+    fi
+
     local package
-    for package in "$@"; do
+    for package in broadcom-wl-dkms rtl8821cu-morrownr-dkms-git; do
         if pacman -Q "${package}" &>/dev/null; then
             log_subsection "Removing ${package}"
             sudo pacman -Rns --noconfirm "${package}" || log_warn "Failed to remove ${package}"
@@ -30,29 +37,16 @@ remove_drivers() {
             log_info "${package} is not installed"
         fi
     done
-}
 
-# Usage
-remove_drivers broadcom-wl-dkms rtl8821cu-morrownr-dkms-git
-
-log_subsection "Writing /etc/environment"
-sudo tee /etc/environment > /dev/null << 'EOF'
+    log_subsection "Writing /etc/environment"
+    sudo tee /etc/environment > /dev/null << 'EOF'
 QT_QPA_PLATFORMTHEME=qt5ct
 QT_STYLE_OVERRIDE=kvantum
 GTK_THEME="Arc-Dawn-Dark"
 EDITOR=nano
 BROWSER=firefox
 EOF
-log_success "/etc/environment written"
-
-log_subsection "Setting Alacritty font size to 14"
-sed -i 's/^size = .*/size = 14.0/' "${HOME}/.config/alacritty/alacritty.toml"
-log_success "Alacritty font size set to 14"
-
-setup_hq() {
-    if [[ "$(hostname)" != "hq" ]]; then
-        return 0
-    fi
+    log_success "/etc/environment written"
 
     log_subsection "HQ: installing GTK 3.0 and 4.0 config"
 
@@ -125,6 +119,10 @@ EOF
         "${HOME}/.config/gtk-4.0"
 
     log_success "GTK 3.0 and 4.0 config installed for hq"
+
+    log_subsection "Setting Alacritty font size to 14"
+    sed -i 's/^size = .*/size = 14.0/' "${HOME}/.config/alacritty/alacritty.toml"
+    log_success "Alacritty font size set to 14"
 }
 
 
