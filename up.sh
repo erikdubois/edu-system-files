@@ -13,7 +13,7 @@ fi
 
 git add --all .
 
-git commit -m "update"
+git diff --cached --quiet || git commit -m "update"
 
 # Push the local files to github
 
