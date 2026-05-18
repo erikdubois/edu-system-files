@@ -20,18 +20,19 @@ fi
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 main() {
-    log_section "Clone arcolinux-nemesis"
+    log_section "kiro-set-cores"
 
-    if test -f /usr/bin/git ; then
-        log_info "git is present"
+    local numberofcores
+    numberofcores=$(nproc)
+
+    if [ "$numberofcores" -gt 1 ]; then
+        log_info "Changing the makeflags for $numberofcores cores."
+        sudo sed -i 's/#MAKEFLAGS="-j2"/MAKEFLAGS="-j'"$numberofcores"'"/g' /etc/makepkg.conf
+        log_info "Changing the PKGEXT to pkg.tar.zst"
+        sudo sed -i "s/PKGEXT='.pkg.tar.xz'/PKGEXT='.pkg.tar.zst'/g" /etc/makepkg.conf
     else
-        log_info "Installing git"
-        sudo pacman -S git --noconfirm
+        log_info "Single core detected — no change."
     fi
-
-    [ -d "$HOME/DATA" ] || mkdir -p "$HOME/DATA"
-    cd ~/DATA
-    git clone https://github.com/erikdubois/arcolinux-nemesis
 
     log_success "$(basename "$0") done"
 }

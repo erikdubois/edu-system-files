@@ -1,5 +1,60 @@
 # CHANGELOG
 
+## 2026.05.18 (session 2)
+
+**What Changed**
+All 33 scripts in `usr/local/bin/` that were not sourcing the shared library have been updated. Every script in the project now sources `/usr/local/lib/kiro-common.sh` for uniform logging, colors, and error handling.
+
+**Technical Details**
+Scripts were processed in four tiers:
+- **Tier 1** (16 scripts): Standard transform — `#set -e` replaced with `set -Euo pipefail`, source block added, echo banners replaced with `log_section`/`log_info`/`log_success`/`log_warn`/`log_error`
+- **Tier 2** (9 scripts): Same as Tier 1 plus removal of inline tput color variable blocks and inline `tput setaf`/`tput sgr0` calls, replaced by library log functions
+- **Tier 3** (7 scripts): Careful handling — duplicate local `check_connectivity()` in `var` removed in favour of the library's version; ANSI display code in `sysinfo`, `sysinfo-retro`, `fetch`, `hfetch`, `sfetch` preserved untouched (display formatting, not logging); custom domain functions in `fix-sddm-conf` and `get-chadwm`/`get-sddm-simplicity` kept and cleaned of tput calls
+- **Tier 4** (1 script): `pci-latency` — shebang changed from `#!/usr/bin/env sh` to `#!/bin/bash`; `set +e` preserved intentionally (script must continue on setpci failures); `set -Euo pipefail` deliberately omitted
+- `get-arcolinux-nemesis` turned out to be a symlink to `get-nemesis` — one edit covered both
+- Deprecated `$[count+1]` arithmetic replaced with `$((count+1))` in `get-chadwm` and `get-sddm-simplicity`
+- `remove-socials` rm calls changed to `rm -f` to be safe under `set -Euo pipefail`
+- All 44 scripts syntax-checked with `bash -n` — zero errors
+
+**Files Modified**
+- `usr/local/bin/iso`
+- `usr/local/bin/edu-get-mirrors`
+- `usr/local/bin/edu-probe`
+- `usr/local/bin/edu-set-cores`
+- `usr/local/bin/edu-which-vga`
+- `usr/local/bin/edu-fix-archlinux-servers`
+- `usr/local/bin/edu-fix-pacman-gpg-conf`
+- `usr/local/bin/get-linux-mainline-x64v3-from-chaotic-repo`
+- `usr/local/bin/get-linux-nitrous-from-chaotic-repo`
+- `usr/local/bin/get-linux-xanmod-edge-x64v3-from-chaotic-repo`
+- `usr/local/bin/get-linux-xanmod-lts-from-chaotic-repo`
+- `usr/local/bin/remove-chaotic-repo-from-pacman.conf`
+- `usr/local/bin/remove-nemesis-repo-from-pacman.conf`
+- `usr/local/bin/toggle-chaotic-repo`
+- `usr/local/bin/skel`
+- `usr/local/bin/velo`
+- `usr/local/bin/get-nemesis` (also covers `get-arcolinux-nemesis` symlink)
+- `usr/local/bin/get-flexi`
+- `usr/local/bin/use`
+- `usr/local/bin/remove-debug`
+- `usr/local/bin/remove-socials`
+- `usr/local/bin/add-virtualbox-guest-utils`
+- `usr/local/bin/get-chadwm`
+- `usr/local/bin/get-sddm-simplicity`
+- `usr/local/bin/var`
+- `usr/local/bin/fix-sddm-conf`
+- `usr/local/bin/sysinfo`
+- `usr/local/bin/sysinfo-retro`
+- `usr/local/bin/fetch`
+- `usr/local/bin/hfetch`
+- `usr/local/bin/sfetch`
+- `usr/local/bin/pci-latency`
+- `CHANGELOG.md`
+- `TODO.md` (new stub)
+- `IDEAS.md` (new stub)
+
+---
+
 ## 2026.05.18
 
 **What Changed**

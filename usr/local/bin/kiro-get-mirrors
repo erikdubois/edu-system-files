@@ -20,18 +20,15 @@ fi
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 main() {
-    log_section "Clone arcolinux-nemesis"
-
-    if test -f /usr/bin/git ; then
-        log_info "git is present"
+    if test -f /usr/bin/reflector ; then
+        log_info "reflector is present"
     else
-        log_info "Installing git"
-        sudo pacman -S git --noconfirm
+        log_info "Installing reflector"
+        sudo pacman -S reflector --noconfirm
     fi
 
-    [ -d "$HOME/DATA" ] || mkdir -p "$HOME/DATA"
-    cd ~/DATA
-    git clone https://github.com/erikdubois/arcolinux-nemesis
+    #sudo /usr/bin/reflector --latest 100 --fastest 100 --number 10 --save /etc/pacman.d/mirrorlist
+    sudo /usr/bin/reflector --score 100 --fastest 10 --number 10 --verbose --save /etc/pacman.d/mirrorlist
 
     log_success "$(basename "$0") done"
 }

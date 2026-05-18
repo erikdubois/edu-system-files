@@ -20,19 +20,11 @@ fi
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 main() {
-    log_section "Clone arcolinux-nemesis"
-
-    if test -f /usr/bin/git ; then
-        log_info "git is present"
+    if [[ -f /etc/dev-rel ]]; then
+        cat /etc/dev-rel
     else
-        log_info "Installing git"
-        sudo pacman -S git --noconfirm
+        log_info "Not on a Kiro ISO."
     fi
-
-    [ -d "$HOME/DATA" ] || mkdir -p "$HOME/DATA"
-    cd ~/DATA
-    git clone https://github.com/erikdubois/arcolinux-nemesis
-
     log_success "$(basename "$0") done"
 }
 

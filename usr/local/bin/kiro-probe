@@ -20,18 +20,12 @@ fi
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 main() {
-    log_section "Clone arcolinux-nemesis"
-
-    if test -f /usr/bin/git ; then
-        log_info "git is present"
-    else
-        log_info "Installing git"
-        sudo pacman -S git --noconfirm
+    if ! pacman -Qi hw-probe &> /dev/null; then
+        log_info "hw-probe is not installed. Installing it..."
+        sudo pacman -S --noconfirm --needed hw-probe
     fi
 
-    [ -d "$HOME/DATA" ] || mkdir -p "$HOME/DATA"
-    cd ~/DATA
-    git clone https://github.com/erikdubois/arcolinux-nemesis
+    sudo -E /usr/bin/hw-probe -all -upload
 
     log_success "$(basename "$0") done"
 }

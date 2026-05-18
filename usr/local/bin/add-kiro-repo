@@ -1,0 +1,53 @@
+#!/bin/bash
+set -Euo pipefail
+##################################################################################################################
+# Author    : Erik Dubois
+# Website   : https://www.erikdubois.be
+##################################################################################################################
+#
+#   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
+#
+##################################################################################################################
+
+# shellcheck source=/usr/local/lib/kiro-common.sh
+if [[ -f /usr/local/lib/kiro-common.sh ]]; then
+    source /usr/local/lib/kiro-common.sh
+else
+    echo "ERROR: kiro-common.sh not found" >&2
+    exit 1
+fi
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+main() {
+    if grep -q "^\[kiro_repo\]" /etc/pacman.conf; then
+        log_success "kiro_repo already present in pacman.conf"
+        return 0
+    fi
+
+    log_subsection "Appending kiro_repo to pacman.conf"
+
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "[DRY-RUN] Would add kiro_repo section to pacman.conf"
+        log_info "[DRY-RUN] Would update pacman databases"
+    else
+        echo "" | sudo tee -a /etc/pacman.conf >/dev/null || {
+            log_warn "Failed to add blank line"
+            exit 1
+        }
+        printf '[kiro_repo]\nSigLevel = Never\nServer = https://kirodubes.github.io/$repo/$arch\n' | \
+            sudo tee -a /etc/pacman.conf >/dev/null || {
+            log_warn "Failed to append kiro_repo to pacman.conf"
+            exit 1
+        }
+        log_subsection "Updating pacman databases"
+        sudo pacman -Syyu --noconfirm || {
+            log_warn "Failed to update pacman databases"
+            exit 1
+        }
+    fi
+
+    log_success "$(basename "$0") done"
+}
+
+main "$@"

@@ -20,18 +20,13 @@ fi
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 main() {
-    log_section "Clone arcolinux-nemesis"
-
-    if test -f /usr/bin/git ; then
-        log_info "git is present"
-    else
-        log_info "Installing git"
-        sudo pacman -S git --noconfirm
+    if [ ! -x /usr/bin/rate-mirrors ]; then
+        log_error "rate-mirrors is not installed. Please install the 'rate-mirrors' package."
+        exit 1
     fi
 
-    [ -d "$HOME/DATA" ] || mkdir -p "$HOME/DATA"
-    cd ~/DATA
-    git clone https://github.com/erikdubois/arcolinux-nemesis
+    log_section "Using rate-mirrors"
+    sudo rate-mirrors --allow-root --disable-comments-in-file --save /etc/pacman.d/mirrorlist arch
 
     log_success "$(basename "$0") done"
 }

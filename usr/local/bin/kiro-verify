@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck source=/usr/local/lib/kiro-common.sh
 set -Euo pipefail
 ##################################################################################################################
 # Author    : Erik Dubois
@@ -10,10 +9,19 @@ set -Euo pipefail
 #
 ##################################################################################################################
 
+# shellcheck source=/usr/local/lib/kiro-common.sh
 if [[ -f /usr/local/lib/kiro-common.sh ]]; then
     source /usr/local/lib/kiro-common.sh
 else
     echo "ERROR: kiro-common.sh not found" >&2
+    exit 1
+fi
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ $EUID -ne 0 ]]; then
+    echo "Run kiro-verify with root privileges: sudo kiro-verify"
+    trap - ERR
     exit 1
 fi
 
@@ -101,6 +109,39 @@ check_config_files() {
 }
 
 ##################################################################################################################
+# Sysctl explainers
+##################################################################################################################
+explain_ip_forward() {
+    local causes=()
+
+    systemctl is-active --quiet libvirtd   2>/dev/null && causes+=("libvirtd — virtual machines (KVM/QEMU)")
+    systemctl is-active --quiet docker     2>/dev/null && causes+=("docker — containers")
+    systemctl is-active --quiet podman     2>/dev/null && causes+=("podman — containers")
+    systemctl is-active --quiet lxd        2>/dev/null && causes+=("lxd — containers")
+    systemctl is-active --quiet tailscaled 2>/dev/null && causes+=("tailscaled — Tailscale VPN")
+    systemctl is-active --quiet openvpn    2>/dev/null && causes+=("openvpn — VPN")
+
+    local wg_units
+    wg_units=$(systemctl list-units --state=active --no-legend 'wg-quick@*' 2>/dev/null | awk '{print $1}' | tr '\n' ' ')
+    [[ -n "${wg_units// /}" ]] && causes+=("WireGuard VPN (${wg_units% })")
+
+    local ovpn_units
+    ovpn_units=$(systemctl list-units --state=active --no-legend 'openvpn-client@*' 'openvpn-server@*' 2>/dev/null | awk '{print $1}' | tr '\n' ' ')
+    [[ -n "${ovpn_units// /}" ]] && causes+=("OpenVPN (${ovpn_units% })")
+
+    if [[ ${#causes[@]} -gt 0 ]]; then
+        warn_check "net.ipv4.ip_forward=1 — kiro sets 0, but overridden at runtime by:"
+        for c in "${causes[@]}"; do
+            echo "           - $c"
+        done
+        echo "         These services need packet forwarding to route traffic between"
+        echo "         virtual machines, containers, or VPN tunnels. This is expected."
+    else
+        warn_check "net.ipv4.ip_forward=1 — no known service identified; check: libvirtd, docker, WireGuard, OpenVPN"
+    fi
+}
+
+##################################################################################################################
 # Sysctl values
 ##################################################################################################################
 check_sysctl() {
@@ -136,6 +177,8 @@ check_sysctl() {
 
         if [[ "$actual" == "$expected" ]]; then
             ok "sysctl $key = $actual"
+        elif [[ "$key" == "net.ipv4.ip_forward" && "$expected" == "0" && "$actual" == "1" ]]; then
+            explain_ip_forward
         else
             ko "sysctl $key: expected '$expected', got '$actual'"
         fi
@@ -394,6 +437,7 @@ check_journal() {
     kiro_issues=$(journalctl -b --no-pager -q 2>/dev/null \
         | grep -iE "(kiro|sysctl|modprobe|udev|zram|pci.latency)" \
         | grep -iE "(error|fail|warn)" \
+        | grep -v "alsactl restore" \
         | grep -c "." || true)
 
     if [[ "$kiro_issues" -gt 0 ]]; then
@@ -401,6 +445,7 @@ check_journal() {
         journalctl -b --no-pager -q 2>/dev/null \
             | grep -iE "(kiro|sysctl|modprobe|udev|zram|pci.latency)" \
             | grep -iE "(error|fail|warn)" \
+            | grep -v "alsactl restore" \
             | head -10 || true
     else
         ok "Journal: no kiro-related warnings/errors found"
@@ -422,12 +467,15 @@ check_journal() {
     local udev_errors
     udev_errors=$(journalctl -b -u systemd-udevd --no-pager -q 2>/dev/null \
         | grep -iE "(error|fail)" \
+        | grep -v "alsactl restore" \
         | grep -c "." || true)
 
     if [[ "$udev_errors" -gt 0 ]]; then
         warn_check "udev: $udev_errors errors in systemd-udevd log"
         journalctl -b -u systemd-udevd --no-pager -q 2>/dev/null \
-            | grep -iE "(error|fail)" | head -5 || true
+            | grep -iE "(error|fail)" \
+            | grep -v "alsactl restore" \
+            | head -5 || true
     else
         ok "udev: no errors in systemd-udevd log"
     fi
@@ -438,10 +486,6 @@ check_journal() {
 ##################################################################################################################
 main() {
     log_section "Kiro System Configuration Verifier"
-
-    if [[ $EUID -ne 0 ]]; then
-        log_info "Running as non-root — dmesg and some journal entries may be restricted"
-    fi
 
     check_config_files
     check_sysctl
