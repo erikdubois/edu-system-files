@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 2026.05.18
+
+**What Changed**
+Added `kiro-verify` — a post-install verification script that checks all configuration settings shipped by this package are actually applied at runtime and scans logs for errors.
+
+**Technical Details**
+The script parses `/etc/sysctl.d/99-kiro-optimizations.conf` dynamically (no hardcoded key list) to compare expected vs live values via `sysctl -n`. Additional checks cover: all 34 config files are installed, ZRAM is active with zstd compression, IO schedulers match device type (NVMe→none, SSD→bfq, HDD→mq-deadline), THP settings in `/sys/kernel/mm/`, blacklisted modules not loaded, no failed systemd units, and a journal/udev/dmesg error scan. Outputs PASS/FAIL/WARN/SKIP per check with a final summary, exits 1 on any FAIL. sysctl params missing from the running kernel produce WARN rather than FAIL.
+
+**Files Modified**
+- `usr/local/bin/kiro-verify` (new)
+- `CHANGELOG.md`
+
+---
+
 ## 2026.05.01
 
 **What Changed**
