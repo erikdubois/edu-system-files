@@ -1,12 +1,11 @@
 # ============================================================================
 # Advanced Sound Card Power Management
 # ============================================================================
-# Fine-tuned for audio quality + power efficiency
 
-# ALSA: prevent clicks/pops from power transitions
-ACTION=="add", SUBSYSTEM=="sound", DRIVER=="snd_hda_intel", \
-  ATTR{model}="auto", ATTR{power_save}="10"
-
-# Jack detection for headphones (auto-disable speakers)
+# Jack detection: restore ALSA state when a sound card is detected
+# Ensures mixer levels and routing are preserved across hotplug events
 ACTION=="add", SUBSYSTEM=="sound", KERNEL=="card*", \
   RUN+="/usr/bin/alsactl restore 2>/dev/null || true"
+
+# snd_hda_intel power_save is set to 0 (never autosuspend) in
+# modprobe.d/audio-hda.conf — no udev override needed here.
