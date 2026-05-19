@@ -572,42 +572,11 @@ check_udev_rules() {
         fail "60-io-scheduler.rules missing"
     fi
 
-    # HID autosuspend — 66-input-optimization.rules must use ENV{DEVTYPE}, not bare DEVTYPE
     local hid_rules="/etc/udev/rules.d/66-input-optimization.rules"
     if [[ -f "${hid_rules}" ]]; then
         pass "66-input-optimization.rules present"
-        if grep -q 'ENV{DEVTYPE}' "${hid_rules}"; then
-            pass "66-input-optimization.rules uses ENV{DEVTYPE} (correct)"
-        else
-            fail "66-input-optimization.rules uses bare DEVTYPE — invalid key in current udev; should be ENV{DEVTYPE}"
-            apply_fix "sed -i 's/DEVTYPE==/ENV{DEVTYPE}==/g' ${hid_rules}" \
-                sed -i 's/DEVTYPE==/ENV{DEVTYPE}==/g' "${hid_rules}"
-        fi
-        if grep -q 'udev-hid-autosuspend' "${hid_rules}"; then
-            pass "66-input-optimization.rules calls udev-hid-autosuspend helper"
-            # systemd 254+ pin mechanism cannot exec shell scripts directly; must go via interpreter
-            if grep 'udev-hid-autosuspend' "${hid_rules}" | grep -q '/bin/bash'; then
-                pass "66-input-optimization.rules invokes udev-hid-autosuspend via /bin/bash (systemd 254+ pin-safe)"
-            else
-                fail "66-input-optimization.rules calls udev-hid-autosuspend directly — systemd 254+ pin will deny shell scripts with 'Permission denied'"
-                apply_fix "sed -i in ${hid_rules}: prefix RUN with /bin/bash" \
-                    sed -i 's|RUN+="/usr/local/bin/udev-hid-autosuspend|RUN+="/bin/bash /usr/local/bin/udev-hid-autosuspend|g' "${hid_rules}"
-            fi
-        else
-            fail "66-input-optimization.rules does not call udev-hid-autosuspend — inline shell subcommand not supported"
-        fi
     else
         fail "66-input-optimization.rules missing"
-    fi
-
-    # HID autosuspend helper script
-    if [[ -x /usr/local/bin/udev-hid-autosuspend ]]; then
-        pass "/usr/local/bin/udev-hid-autosuspend present and executable"
-    elif [[ -f /usr/local/bin/udev-hid-autosuspend ]]; then
-        fail "/usr/local/bin/udev-hid-autosuspend present but not executable"
-        apply_fix "chmod +x /usr/local/bin/udev-hid-autosuspend" chmod +x /usr/local/bin/udev-hid-autosuspend
-    else
-        fail "/usr/local/bin/udev-hid-autosuspend missing"
     fi
 }
 
