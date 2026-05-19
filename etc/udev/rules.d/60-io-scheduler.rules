@@ -7,11 +7,11 @@
 # NVMe devices: minimal overhead (none scheduler)
 ACTION=="add|change", KERNEL=="nvme[0-9]*n[0-9]*", ATTR{queue/scheduler}="none"
 
-# SSD (non-rotating): fair I/O distribution
-ACTION=="add|change", KERNEL=="sd[a-z]*|mmcblk[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="bfq"
+# SSD (non-rotating): low-overhead deadline scheduling
+ACTION=="add|change", KERNEL=="sd[a-z]*|mmcblk[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
 
-# HDD (mechanical, rotating): optimize seek patterns
-ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="mq-deadline"
+# HDD (mechanical, rotating): fair queuing to prevent starvation
+ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
 
 # Virtual disks: no scheduling needed
 ACTION=="add|change", KERNEL=="vd[a-z]*", ATTR{queue/scheduler}="none"

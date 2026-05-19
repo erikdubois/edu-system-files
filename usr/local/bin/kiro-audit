@@ -397,6 +397,24 @@ check_services() {
         pass "pacman-init not enabled (good)"
     fi
     systemctl is-enabled reflector   &>/dev/null && warn "reflector enabled (was this intentional?)" || true
+
+    # cgroup delegation for user sessions (required by ananicy-cpp)
+    local delegate="/usr/lib/systemd/system/user@.service.d/delegate.conf"
+    if [[ -f "${delegate}" ]]; then
+        grep -q 'Delegate=' "${delegate}" \
+            && pass "user@.service.d/delegate.conf present (cgroup delegation enabled)" \
+            || fail "user@.service.d/delegate.conf present but Delegate= line missing"
+    else
+        fail "user@.service.d/delegate.conf missing — ananicy-cpp cgroup support broken"
+    fi
+
+    # ananicy-cpp must be installed and enabled
+    pkg_installed ananicy-cpp \
+        && pass "ananicy-cpp installed" \
+        || fail "ananicy-cpp not installed"
+    systemctl is-enabled ananicy-cpp &>/dev/null \
+        && pass "ananicy-cpp.service enabled" \
+        || fail "ananicy-cpp.service not enabled"
 }
 
 check_permissions() {
@@ -541,6 +559,57 @@ check_zram() {
     fi
 }
 
+check_udev_rules() {
+    log_section "Udev rules"
+
+    # IO scheduler — correct assignment per device type (from CachyOS research)
+    local rules_file="/etc/udev/rules.d/60-io-scheduler.rules"
+    if [[ -f "${rules_file}" ]]; then
+        pass "60-io-scheduler.rules present"
+        grep -q 'rotational.*=="0".*mq-deadline\|mq-deadline.*rotational.*=="0"' "${rules_file}" \
+            && pass "IO scheduler: SSD → mq-deadline" \
+            || fail "IO scheduler: SSD not set to mq-deadline (check 60-io-scheduler.rules)"
+        grep -q 'rotational.*=="1".*bfq\|bfq.*rotational.*=="1"' "${rules_file}" \
+            && pass "IO scheduler: HDD → bfq" \
+            || fail "IO scheduler: HDD not set to bfq (check 60-io-scheduler.rules)"
+        grep -q 'nvme.*none\|none.*nvme' "${rules_file}" \
+            && pass "IO scheduler: NVMe → none" \
+            || warn "IO scheduler: NVMe rule not found in 60-io-scheduler.rules"
+    else
+        fail "60-io-scheduler.rules missing"
+    fi
+
+    # HID autosuspend — 66-input-optimization.rules must use DEVTYPE not ENV{DEVTYPE}
+    local hid_rules="/etc/udev/rules.d/66-input-optimization.rules"
+    if [[ -f "${hid_rules}" ]]; then
+        pass "66-input-optimization.rules present"
+        if grep -q 'ENV{DEVTYPE}' "${hid_rules}"; then
+            fail "66-input-optimization.rules uses deprecated ENV{DEVTYPE} — causes udev errors"
+            apply_fix "sed -i 's/ENV{DEVTYPE}/DEVTYPE/g' ${hid_rules}" \
+                sed -i 's/ENV{DEVTYPE}/DEVTYPE/g' "${hid_rules}"
+        else
+            pass "66-input-optimization.rules uses DEVTYPE (correct)"
+        fi
+        if grep -q 'udev-hid-autosuspend' "${hid_rules}"; then
+            pass "66-input-optimization.rules calls udev-hid-autosuspend helper"
+        else
+            fail "66-input-optimization.rules does not call udev-hid-autosuspend — inline shell subcommand not supported"
+        fi
+    else
+        fail "66-input-optimization.rules missing"
+    fi
+
+    # HID autosuspend helper script
+    if [[ -x /usr/local/bin/udev-hid-autosuspend ]]; then
+        pass "/usr/local/bin/udev-hid-autosuspend present and executable"
+    elif [[ -f /usr/local/bin/udev-hid-autosuspend ]]; then
+        fail "/usr/local/bin/udev-hid-autosuspend present but not executable"
+        apply_fix "chmod +x /usr/local/bin/udev-hid-autosuspend" chmod +x /usr/local/bin/udev-hid-autosuspend
+    else
+        fail "/usr/local/bin/udev-hid-autosuspend missing"
+    fi
+}
+
 check_failed_units() {
     log_section "Failed systemd units"
 
@@ -612,6 +681,7 @@ main() {
     check_user_groups
     check_services
     check_zram
+    check_udev_rules
     check_permissions
     check_sysctl_security
     check_failed_units
