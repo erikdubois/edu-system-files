@@ -224,6 +224,11 @@ check_calamares_cleanup() {
     [[ -d /etc/systemd/system/getty@tty1.service.d ]] && fail "getty@tty1 autologin not cleaned up"                  || pass "getty@tty1 autologin removed (good)"
     [[ -f /etc/sudoers.d/g_wheel ]]                  && fail "/etc/sudoers.d/g_wheel live-only rule still present"   || pass "/etc/sudoers.d/g_wheel removed (good)"
     [[ -f /etc/polkit-1/rules.d/49-nopasswd_global.rules ]] && fail "49-nopasswd_global.rules live-only rule still present" || pass "49-nopasswd_global.rules removed (good)"
+
+    # archiso SSH override — enables PermitRootLogin yes; must be gone post-install
+    [[ -f /etc/ssh/sshd_config.d/10-archiso.conf ]] \
+        && fail "/etc/ssh/sshd_config.d/10-archiso.conf present (PermitRootLogin yes — archiso leftover)" \
+        || pass "10-archiso.conf SSH override removed (good)"
 }
 
 check_kiro_final_config() {
@@ -328,6 +333,27 @@ check_permissions() {
 
     [[ "${shadow_perm}"  == "400" ]] && pass "/etc/shadow permissions: 400"   || fail "/etc/shadow permissions wrong: ${shadow_perm} (expected 400)"
     [[ "${gshadow_perm}" == "400" ]] && pass "/etc/gshadow permissions: 400"  || fail "/etc/gshadow permissions wrong: ${gshadow_perm} (expected 400)"
+
+    # CUPS config files — world-readable in older Kiro; fixed via tmpfiles.d
+    [[ -f /etc/tmpfiles.d/cups-permissions.conf ]] \
+        && pass "/etc/tmpfiles.d/cups-permissions.conf present" \
+        || fail "/etc/tmpfiles.d/cups-permissions.conf missing (CUPS config permissions not enforced)"
+
+    if [[ -f /etc/cups/classes.conf ]]; then
+        local cups_class_perm
+        cups_class_perm=$(stat -c '%a' /etc/cups/classes.conf)
+        [[ "${cups_class_perm}" == "600" ]] \
+            && pass "/etc/cups/classes.conf permissions: 600" \
+            || fail "/etc/cups/classes.conf permissions wrong: ${cups_class_perm} (expected 600)"
+    fi
+
+    if [[ -f /etc/cups/printers.conf ]]; then
+        local cups_printers_perm
+        cups_printers_perm=$(stat -c '%a' /etc/cups/printers.conf)
+        [[ "${cups_printers_perm}" == "600" ]] \
+            && pass "/etc/cups/printers.conf permissions: 600" \
+            || fail "/etc/cups/printers.conf permissions wrong: ${cups_printers_perm} (expected 600)"
+    fi
 }
 
 check_dev_rel() {
