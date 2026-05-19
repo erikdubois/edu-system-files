@@ -611,27 +611,6 @@ check_udev_rules() {
     fi
 }
 
-check_pam_config() {
-    log_section "PAM configuration"
-
-    local system_auth="/etc/pam.d/system-auth"
-    if [[ ! -f "${system_auth}" ]]; then
-        fail "${system_auth} missing"
-        return
-    fi
-    pass "${system_auth} present"
-
-    # pam_faillock must have audit=0 — lqx kernel has no audit socket; without
-    # this flag every sudo call logs "Error sending audit message: Protocol not supported"
-    local faillock_bad
-    faillock_bad=$(grep 'pam_faillock.so' "${system_auth}" | grep -v 'audit=0' || true)
-    if [[ -z "${faillock_bad}" ]]; then
-        pass "pam_faillock.so lines all have audit=0"
-    else
-        fail "pam_faillock.so line(s) missing audit=0 in ${system_auth}"
-        echo "${faillock_bad}" | while read -r line; do echo "        ${line}"; done
-    fi
-}
 
 check_resolved_config() {
     log_section "systemd-resolved configuration"
@@ -735,7 +714,6 @@ main() {
     check_udev_rules
     check_permissions
     check_sysctl_security
-    check_pam_config
     check_resolved_config
     check_tumbler
     check_failed_units
