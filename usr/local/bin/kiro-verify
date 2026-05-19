@@ -296,9 +296,9 @@ check_io_schedulers() {
                 local rotational
                 rotational=$(cat "$dev_path/queue/rotational" 2>/dev/null || echo "0")
                 if [[ "$rotational" == "1" ]]; then
-                    _check_scheduler "$dev" "mq-deadline"
-                else
                     _check_scheduler "$dev" "bfq"
+                else
+                    _check_scheduler "$dev" "mq-deadline"
                 fi
                 ;;
             loop*|ram*|zram*)
