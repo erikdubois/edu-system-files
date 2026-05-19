@@ -178,6 +178,55 @@ section_kernel() {
 
     _field "Running" "$(uname -r)"
     _field "Version" "$(grep -oP 'Linux version \S+' /proc/version | head -1)"
+
+    local governor="unknown"
+    local gov_file
+    gov_file=$(ls /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || true)
+    [[ -f "$gov_file" ]] && governor=$(cat "$gov_file")
+    _field "CPU governor" "$governor"
+
+    _field "Kernel cmdline" "$(cat /proc/cmdline)"
+}
+
+section_boot() {
+    log_subsection "Bootloader"
+
+    local bl="unknown"
+    if [[ -d /sys/firmware/efi ]]; then
+        local efi_entries
+        efi_entries=$(efibootmgr 2>/dev/null || true)
+        if echo "$efi_entries" | grep -qi 'systemd\|linux boot manager'; then
+            bl="systemd-boot ($(pacman -Q systemd 2>/dev/null | awk '{print $2}' || echo 'installed'))"
+        elif echo "$efi_entries" | grep -qi 'grub'; then
+            bl="GRUB ($(pacman -Q grub 2>/dev/null | awk '{print $2}' || echo 'installed'))"
+        elif echo "$efi_entries" | grep -qi 'refind'; then
+            bl="rEFInd ($(pacman -Q refind 2>/dev/null | awk '{print $2}' || echo 'installed'))"
+        elif echo "$efi_entries" | grep -qi 'limine'; then
+            bl="Limine ($(pacman -Q limine 2>/dev/null | awk '{print $2}' || echo 'installed'))"
+        fi
+    else
+        [[ -f /boot/grub/grub.cfg ]] && bl="GRUB (legacy BIOS)"
+    fi
+    _field "Bootloader" "$bl"
+}
+
+section_packages() {
+    log_subsection "Packages"
+
+    local total
+    total=$(pacman -Q 2>/dev/null | wc -l)
+    _field "Installed" "$total packages"
+
+    local aur_helper="none detected"
+    for h in paru yay trizen pikaur aurman pakku; do
+        if command -v "$h" &>/dev/null; then
+            local hver
+            hver=$(pacman -Q "$h" 2>/dev/null | awk '{print $2}' || echo "installed")
+            aur_helper="$h ($hver)"
+            break
+        fi
+    done
+    _field "AUR helper" "$aur_helper"
 }
 
 ##################################################################################################################
@@ -214,12 +263,14 @@ main() {
     log_section "Kiro System Diagnostics"
 
     section_system
+    section_boot
     section_hardware
     section_gpu
     section_storage
     section_network
     section_desktop
     section_kernel
+    section_packages
 
     log_success "$(basename "$0") done"
 }
