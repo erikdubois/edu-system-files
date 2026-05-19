@@ -256,7 +256,16 @@ check_kiro_final_config() {
     grep -q '^AutoEnable=true' /etc/bluetooth/main.conf 2>/dev/null && pass "Bluetooth AutoEnable=true" || fail "Bluetooth AutoEnable not set in /etc/bluetooth/main.conf"
 
     # makepkg.conf optimizations (kiro_before)
-    grep -q '^MAKEFLAGS="-j' /etc/makepkg.conf 2>/dev/null && pass "makepkg.conf MAKEFLAGS set" || fail "makepkg.conf MAKEFLAGS not optimized"
+    local nproc_count makeflags_j
+    nproc_count=$(nproc)
+    makeflags_j=$(grep '^MAKEFLAGS=' /etc/makepkg.conf 2>/dev/null | grep -oP '(?<=-j)\d+' || echo "0")
+    if [[ "${makeflags_j}" -eq "${nproc_count}" ]]; then
+        pass "makepkg.conf MAKEFLAGS=-j${nproc_count} (all CPUs used)"
+    elif [[ "${makeflags_j}" -gt 0 ]]; then
+        warn "makepkg.conf MAKEFLAGS=-j${makeflags_j} but system has ${nproc_count} CPUs"
+    else
+        fail "makepkg.conf MAKEFLAGS not set to use all CPUs"
+    fi
     grep -q "^PKGEXT='.pkg.tar.zst'" /etc/makepkg.conf 2>/dev/null && pass "makepkg.conf PKGEXT=.pkg.tar.zst" || fail "makepkg.conf PKGEXT not set to .pkg.tar.zst"
     grep -qP '^OPTIONS=.*!debug' /etc/makepkg.conf 2>/dev/null && pass "makepkg.conf !debug in OPTIONS" || fail "makepkg.conf debug not disabled in OPTIONS"
 }
