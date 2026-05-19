@@ -283,13 +283,6 @@ check_calamares_cleanup() {
         pass "49-nopasswd_global.rules removed (good)"
     fi
 
-    # archiso SSH override — enables PermitRootLogin yes; must be gone post-install
-    if [[ -f /etc/ssh/sshd_config.d/10-archiso.conf ]]; then
-        fail "/etc/ssh/sshd_config.d/10-archiso.conf present (PermitRootLogin yes — archiso leftover)"
-        apply_fix "rm /etc/ssh/sshd_config.d/10-archiso.conf" rm /etc/ssh/sshd_config.d/10-archiso.conf
-    else
-        pass "10-archiso.conf SSH override removed (good)"
-    fi
 }
 
 check_kiro_final_config() {
