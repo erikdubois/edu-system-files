@@ -46,7 +46,7 @@ main() {
     done
 
     if [[ $EUID -ne 0 ]]; then
-        log_error "This script must be run as root"
+        echo "${RED}This script must be run as root.${RESET}" >&2
         exit 1
     fi
 
