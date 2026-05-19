@@ -402,6 +402,88 @@ check_package_integrity() {
     fi
 }
 
+check_sysctl_security() {
+    log_section "Sysctl security baseline"
+
+    local key expected actual
+    declare -A expected_values=(
+        [kernel.kptr_restrict]=2
+        [kernel.dmesg_restrict]=1
+        [kernel.yama.ptrace_scope]=1
+        [kernel.unprivileged_bpf_disabled]=1
+        [kernel.perf_event_paranoid]=3
+        [fs.suid_dumpable]=0
+        [net.ipv4.conf.all.send_redirects]=0
+        [net.ipv4.tcp_syncookies]=1
+    )
+
+    for key in "${!expected_values[@]}"; do
+        expected="${expected_values[$key]}"
+        actual=$(sysctl -n "${key}" 2>/dev/null || echo "unavailable")
+        if [[ "${actual}" == "unavailable" ]]; then
+            warn "${key} not supported by this kernel"
+        elif [[ "${actual}" == "${expected}" ]]; then
+            pass "${key} = ${actual}"
+        else
+            fail "${key} = ${actual} (expected ${expected})"
+        fi
+    done
+}
+
+check_zram() {
+    log_section "ZRAM"
+
+    pkg_installed zram-generator && pass "zram-generator installed" || fail "zram-generator not installed"
+    [[ -f /etc/systemd/zram-generator.conf ]] && pass "zram-generator.conf present" || fail "zram-generator.conf missing"
+    [[ -b /dev/zram0 ]] && pass "/dev/zram0 device present" || fail "/dev/zram0 not present — ZRAM not active"
+
+    if [[ -b /dev/zram0 ]]; then
+        if swapon --show | grep -q zram0; then
+            local zram_size
+            zram_size=$(swapon --show --noheadings | grep zram0 | awk '{print $3}')
+            pass "/dev/zram0 active as swap (${zram_size})"
+        else
+            fail "/dev/zram0 exists but not active as swap"
+        fi
+
+        local algo
+        algo=$(zramctl --noheadings -o ALGORITHM /dev/zram0 2>/dev/null || echo "unknown")
+        [[ "${algo}" == "zstd" ]] && pass "ZRAM compression: zstd" || warn "ZRAM compression: ${algo} (expected zstd)"
+    fi
+}
+
+check_failed_units() {
+    log_section "Failed systemd units"
+
+    local failed_count
+    failed_count=$(systemctl --failed --no-legend 2>/dev/null | wc -l)
+
+    if [[ "${failed_count}" -eq 0 ]]; then
+        pass "No failed systemd units"
+    else
+        fail "${failed_count} failed systemd unit(s):"
+        systemctl --failed --no-legend | while read -r line; do
+            echo "        ${line}"
+        done
+    fi
+}
+
+check_boot_and_updates() {
+    log_section "Boot time and updates (info)"
+
+    local boot_summary
+    boot_summary=$(systemd-analyze 2>/dev/null | head -1)
+    echo "  ${CYAN}INFO${RESET}  Boot: ${boot_summary}"
+
+    local update_count
+    update_count=$(checkupdates 2>/dev/null | wc -l || echo "0")
+    if [[ "${update_count}" -eq 0 ]]; then
+        echo "  ${CYAN}INFO${RESET}  Pending updates: 0"
+    else
+        echo "  ${YELLOW}INFO${RESET}  Pending updates: ${update_count} package(s) available"
+    fi
+}
+
 check_bootloader() {
     log_section "Bootloader"
 
@@ -440,10 +522,14 @@ main() {
     check_sddm
     check_user_groups
     check_services
+    check_zram
     check_permissions
+    check_sysctl_security
+    check_failed_units
     check_dev_rel
     check_nvidia
     check_bootloader
+    check_boot_and_updates
     check_package_integrity
 
     log_section "Audit Summary"
