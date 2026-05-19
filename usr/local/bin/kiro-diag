@@ -44,6 +44,16 @@ section_system() {
 
     [[ -d /sys/firmware/efi ]] && _field "Firmware" "UEFI" || _field "Firmware" "BIOS/Legacy"
 
+    _field "Uptime" "$(uptime -p)"
+
+    local virt
+    virt=$(systemd-detect-virt 2>/dev/null || echo "unknown")
+    [[ "$virt" == "none" ]] && virt="bare metal"
+    _field "Virtualization" "$virt"
+
+    _field "Timezone" "$(timedatectl show --property=Timezone --value 2>/dev/null || echo 'unknown')"
+    _field "Locale" "$(localectl status 2>/dev/null | awk '/System Locale:/{print $3}')"
+
     local pkg
     pkg=$(pacman -Qqo "/usr/local/bin/$(basename "${BASH_SOURCE[0]}")" 2>/dev/null) \
         && _field "Kiro package" "$(pacman -Q "$pkg")" \
@@ -127,6 +137,17 @@ section_storage() {
     local mounts
     mounts=$(mount | grep '^/dev' | awk '{print $1 "(" $5 ")"}' | tr '\n' '  ')
     _field "Mounted" "$mounts"
+
+    echo
+    df -h --output=target,fstype,size,used,avail,pcent 2>/dev/null \
+        | grep -v '^tmpfs\|^devtmpfs\|^efivarfs\|^Filesystem\|^/dev/loop' \
+        | awk 'NR==1{print "  "$0} NR>1{print "  "$0}' \
+        || true
+    echo
+
+    local swap
+    swap=$(free -h --si | awk '/^Swap:/{print $2 " total, " $3 " used, " $4 " free"}')
+    _field "Swap" "${swap:-none}"
 }
 
 section_network() {
@@ -228,6 +249,58 @@ section_packages() {
     done
 }
 
+section_audio() {
+    log_subsection "Audio"
+
+    if pgrep -x pipewire &>/dev/null; then
+        local pw_ver
+        pw_ver=$(pacman -Q pipewire 2>/dev/null | awk '{print $2}' || echo "installed")
+        _field "PipeWire" "running ($pw_ver)"
+        if pgrep -x pipewire-pulse &>/dev/null; then
+            _field "pipewire-pulse" "running (PulseAudio compat active)"
+        else
+            _field "pipewire-pulse" "not running"
+        fi
+        if pgrep -x wireplumber &>/dev/null; then
+            local wp_ver
+            wp_ver=$(pacman -Q wireplumber 2>/dev/null | awk '{print $2}' || echo "installed")
+            _field "WirePlumber" "running ($wp_ver)"
+        fi
+    elif pgrep -x pulseaudio &>/dev/null; then
+        local pa_ver
+        pa_ver=$(pacman -Q pulseaudio 2>/dev/null | awk '{print $2}' || echo "installed")
+        _field "PulseAudio" "running ($pa_ver)"
+    else
+        _field "Audio server" "none detected (ALSA only?)"
+    fi
+}
+
+section_bluetooth() {
+    log_subsection "Bluetooth"
+
+    if systemctl is-active --quiet bluetooth 2>/dev/null; then
+        _field "Service" "active"
+    else
+        _field "Service" "inactive"
+    fi
+
+    local adapter
+    adapter=$(bluetoothctl show 2>/dev/null | grep -E 'Name:|Powered:|Discoverable:' | sed 's/^\s*//' | tr '\n' '  ' || echo "no adapter")
+    _field "Adapter" "${adapter:-none found}"
+}
+
+section_temps() {
+    log_subsection "Temperatures"
+
+    if command -v sensors &>/dev/null; then
+        echo
+        sensors 2>/dev/null | grep -E '°C|temp|fan|rpm' | sed 's/^/  /' || echo "  (no sensor data)"
+        echo
+    else
+        _field "sensors" "lm_sensors not installed"
+    fi
+}
+
 ##################################################################################################################
 # Main
 ##################################################################################################################
@@ -267,8 +340,11 @@ main() {
     section_gpu
     section_storage
     section_network
+    section_audio
+    section_bluetooth
     section_desktop
     section_kernel
+    section_temps
     section_packages
 
     log_success "$(basename "$0") done"
