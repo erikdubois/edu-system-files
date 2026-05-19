@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## 2026.05.19 (session 5)
+
+**What Changed**
+Major expansion of `kiro-diag` with new sections; fixes to `kiro-lint` and `kiro-verify`; stale CUPS check removed from `kiro-audit`.
+
+**Technical Details**
+- `kiro-diag` fully rewritten: replaced raw `tput` calls with library color vars, added `_field()` helper, structured into named section functions. New sections: Hardware (CPU, RAM, lsblk), GPU (Intel + AMD + NVIDIA with drivers), Storage (df -h, swap), Network (ip -br), Audio (PipeWire/WirePlumber/PulseAudio via pgrep), Bluetooth (bluez state + adapter), Desktop (DM, WM via pgrep, sessions), Kernel (governor, cmdline), Bootloader (efibootmgr-based detection for systemd-boot/GRUB/rEFInd/Limine), Packages (count, paru/yay status), Temperatures (sensors). System section gained uptime, virtualization, timezone, locale, Kiro package version.
+- `kiro-diag` fixes: `log_error` → `echo+RED` for unknown option; NVIDIA driver check now parses `lspci -nnk` directly; nvidia-drm.modeset checks `/proc/cmdline` first then systemd-boot then grub; package version queries installed path not `$BASH_SOURCE`; ISO fields split into release/codename/build; `ohmychadwm` added to WM detection list; Intel GPU detection added.
+- `kiro-lint`: fixed `log_error` misuse (ERR trap handler called with plain string); added `w*` to `_sysfs_attr_exists` network branch so `KERNEL=="w*"` udev rules are verified instead of silently skipped.
+- `kiro-verify`: corrected IO scheduler expectation for `sd*` SSDs (mq-deadline, not bfq — matches the udev rule); added 3 missing deployed config files to presence check (`dmesg-nopasswd`, `10-kiro-mdns.conf`, `10-kiro-session.conf`).
+- `kiro-audit`: removed stale `cups-permissions.conf` tmpfiles.d presence check; simplified CUPS fix branches to always use `chmod 600` directly.
+
+**Files Modified**
+- `usr/local/bin/kiro-diag`
+- `usr/local/bin/kiro-lint`
+- `usr/local/bin/kiro-verify`
+- `usr/local/bin/kiro-audit`
+
+---
+
 ## 2026.05.19 (session 4)
 
 **What Changed**
