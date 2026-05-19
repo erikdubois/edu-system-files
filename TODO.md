@@ -4,11 +4,8 @@
 
 ## Planned
 
-### kiro-lint — static config analyser
-- Check `etc/sysctl.d/` files for duplicate keys within the same file
-- Cross-check `modprobe.d/` parameters against `/sys/module/<driver>/parameters/` on the running system
-- Flag conflicting settings across files (e.g. `power_save` set in both modprobe.d and a udev rule)
-- Verify udev `ATTR{}` write targets exist in sysfs before deployment
+### kiro-lint — follow-on
+- `snd_hda_intel.stateful_codec` flagged FAIL (not exposed in lqx 7.0.9 parameters) — verify on a vanilla Arch kernel or remove from audio-hda.conf if the param doesn't exist upstream
 
 ### Phase 2 — Script flags
 - Add `--help` and `--dry-run` to all `usr/local/bin/` scripts

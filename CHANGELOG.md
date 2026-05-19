@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## 2026.05.19
+
+**What Changed**
+Added `kiro-lint` — a static config analyser that checks the `etc/` tree before deployment.
+
+**Technical Details**
+Four checks implemented:
+- **Sysctl duplicate keys**: parses each `sysctl.d/*.conf`, joins backslash-continuation lines, flags any key that appears more than once in the same file (last write wins, earlier value is silently lost)
+- **Modprobe params vs sysfs**: for each `options <driver> param=val` in `modprobe.d/`, verifies the param is exposed under `/sys/module/<driver>/parameters/`; skips gracefully when the module isn't loaded; detected `snd_hda_intel.stateful_codec` as absent from lqx 7.0.9 kernel
+- **Cross-file conflicts**: builds a map of all modprobe param values, detects same driver/param set to different values across files, then checks udev `ATTR{}` write targets for param names that match — flags anything where udev would silently override the modprobe value at runtime
+- **Udev ATTR write targets**: extracts `ATTR{path}="value"` write assignments (distinguished from `==` match conditions via PCRE negative lookbehind), resolves the KERNEL= pattern to a sysfs search base, and verifies the attribute path exists on a live device; SKIPs cleanly when no matching hardware is present
+- Script accepts `--source <path>` to analyse a repo tree before deployment (default: `/` for installed files); no root required
+
+**Files Modified**
+- `usr/local/bin/kiro-lint` (new)
+- `TODO.md`
+- `CHANGELOG.md`
+
+---
+
 ## 2026.05.18 (session 3)
 
 **What Changed**
