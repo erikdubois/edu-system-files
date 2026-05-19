@@ -85,6 +85,12 @@ on_error() {
 
 trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
+if [[ $EUID -ne 0 ]]; then
+    echo "Run kiro-audit with root privileges: sudo kiro-audit"
+    trap - ERR
+    exit 1
+fi
+
 #####################################################################
 # Counters
 #####################################################################
@@ -208,7 +214,7 @@ check_kiro_final_config() {
     grep -q 'EDITOR=nano' /etc/profile 2>/dev/null && pass "EDITOR=nano set in /etc/profile" || fail "EDITOR=nano not set in /etc/profile"
 
     # Bluetooth AutoEnable
-    grep -q '^AutoEnable=true' /etc/bluetooth/main.conf 2>/dev/null && pass "Bluetooth AutoEnable=true" || warn "Bluetooth AutoEnable not set (no Bluetooth hardware?)"
+    grep -q '^AutoEnable=true' /etc/bluetooth/main.conf 2>/dev/null && pass "Bluetooth AutoEnable=true" || fail "Bluetooth AutoEnable not set in /etc/bluetooth/main.conf"
 
     # makepkg.conf optimizations (kiro_before)
     grep -q '^MAKEFLAGS="-j' /etc/makepkg.conf 2>/dev/null && pass "makepkg.conf MAKEFLAGS set" || fail "makepkg.conf MAKEFLAGS not optimized"
