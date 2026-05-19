@@ -60,8 +60,36 @@ All `etc/` config files were audited and fixed. The set is now safe to deploy on
 ## Script improvement status
 
 - Phase 1 (complete): unified library, error handling, variable quoting — all 33 scripts source `kiro-common.sh`
-- Phase 2 (in progress): `--help`/`--version`/`--dry-run` flags and man pages — pattern established on `kiro-fix-pacman-keys` and `kiro-enable-ssh`
+- Phase 2 (in progress): `--help`/`--version`/`--dry-run` flags and man pages — pattern established on `kiro-fix-pacman-keys`, `kiro-enable-ssh`, and `kiro-audit`
 - Phases 3–4 (planned): config files, full shellcheck/shfmt pass
+
+## `--fix` mode pattern (kiro-audit)
+
+For audit/diagnostic scripts that can auto-remediate: add `FIX_MODE=false`, parse `--fix` in the arg loop, and use this helper:
+
+```bash
+apply_fix() {
+    local msg="$1"; shift
+    if [[ "${FIX_MODE}" == true ]]; then
+        echo "  ${CYAN}FIX${RESET}   ${msg}"
+        if "$@"; then FIXED=$((FIXED + 1)); else echo "  ${RED}ERR${RESET}   fix failed: $*"; fi
+    else
+        echo "  ${CYAN}FIX?${RESET}  --fix: ${msg}"
+    fi
+}
+```
+
+Call it immediately after `fail()` on fixable checks. Read-only mode shows `FIX?` hints; `--fix` mode prints and runs. Summary reports `FIXED: N`.
+
+## `--version` — read from pacman at runtime
+
+Never hardcode a version string. Query the owning package:
+
+```bash
+pkg=$(pacman -Qqo "$(realpath "${BASH_SOURCE[0]}")" 2>/dev/null) \
+    && pacman -Q "${pkg}" \
+    || echo "$(basename "$0") (not installed via pacman)"
+```
 
 ## `log_error` is a trap handler, not a message function
 

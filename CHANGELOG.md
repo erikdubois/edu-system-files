@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026.05.19 (session 3)
+
+**What Changed**
+Added `--fix` mode to `kiro-audit` that auto-remediates known fixable failures. Fixed `--version` to read the version from the owning pacman package at runtime instead of a hardcoded string.
+
+**Technical Details**
+- `apply_fix "description" cmd [args...]` helper: in `--fix` mode prints the description and runs the command, incrementing `FIXED` on success; in read-only mode prints a `FIX?` hint showing what would run. No `eval` — command and args passed directly via `"$@"`.
+- 8 fixable checks wired: 6 archiso leftover file/dir deletions (`10-archiso.conf`, `.automated_script.sh`, `.zlogin`, `getty@tty1` drop-in, `g_wheel`, `49-nopasswd_global.rules`), `systemctl mask pacman-init`, and `systemd-tmpfiles --create` for CUPS permissions (falls back to `chmod 600` if the `tmpfiles.d` conf is absent).
+- Summary shows `FIXED: N` when `--fix` is used; final message says "re-run to confirm" rather than hard-failing when fixes were applied — FAIL counter still reflects issues found pre-fix.
+- `--version` now runs `pacman -Qqo "$(realpath "${BASH_SOURCE[0]}")"` to get the owning package name, then `pacman -Q "$pkg"` to print `<pkg> <version>`. Falls back gracefully when not installed via pacman.
+
+**Files Modified**
+- `usr/local/bin/kiro-audit`
+
+---
+
 ## 2026.05.19 (session 2)
 
 **What Changed**

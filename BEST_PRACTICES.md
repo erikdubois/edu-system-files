@@ -1,5 +1,21 @@
 # Claude Best Practices
 
+## 2026-05-18 (session end — kiro-iso-next TODO housekeeping)
+
+**Tip: Display any list Claude will be asked to reference by number — use sequential numbers top to bottom, across all sections**
+When a list will be referenced conversationally ("3 done", "move 2 to backlog"), number every item sequentially from 1 regardless of section boundaries. Section headers reset context but not numbering. The user says "1" and means item 1 — they do not say "first item in Backlog". A numbered display costs nothing to produce and eliminates all "which one do you mean?" clarification. Apply this everywhere: TODO lists, package lists, audit findings, any multi-item display the user will act on by reference.
+
+**Tip: Mark TODO items with explicit "Verified working" — never leave "Needs test" notes in Done**
+A Done item that still says "Needs build + audio test" is not done. Before moving any item to Done, either verify it yourself or get explicit confirmation from the user. Then replace the pending-test note with "Verified working." in the item text. A Done section with lingering caveats creates false confidence and forces future sessions to re-investigate whether the item was actually closed. If the text still has a conditional, the item stays in Backlog.
+
+## 2026-05-18 (session end — kiro-iso-next audit)
+
+**Tip: In bash with `set -euo pipefail`, use `counter=$((counter + 1))` not `((counter++))` — the latter exits the script when the counter is zero**
+`((expression))` is an arithmetic command that exits with status 1 when the expression evaluates to 0. With `set -e` active, `((counter++))` when `counter=0` exits the entire script at that line — silently, with no error message. The fix is `counter=$((counter + 1))`, which is a variable assignment and always exits 0. This pattern bites especially in audit/counter scripts where all counters start at zero. Always use the assignment form for increment-style arithmetic in `set -e` scripts.
+
+**Tip: When capturing large SSH command output, redirect to a remote file then `cat` — don't pipe through SSH**
+`ssh host "long_command"` truncates silently when output exceeds the tool's capture buffer. The fix is a two-step: `ssh host "command > /tmp/result.txt 2>&1"` (let it run to completion remotely), then `ssh host "cat /tmp/result.txt"` (fetch the finished output). This pattern also decouples the command's runtime from the SSH connection timeout — a 5-minute `pacman -Qk` scan won't drop the connection mid-run. Apply it any time a remote command produces more than ~100 lines or takes more than a few seconds.
+
 ## 2026-05-18 (session end — edu-system-files config audit)
 
 **Tip: Before deploying any multi-block config file, grep for duplicate keys — the last value wins silently and earlier blocks become false documentation**
@@ -24,6 +40,22 @@ In Plymouth's script language, `Image.Scale(w, h)` creates a scaled copy once at
 **Tip: Test Plymouth themes without rebooting — `plymouthd --no-daemon --debug` in one terminal, `plymouth --show-splash` in another**
 Rebooting to check every Plymouth script change wastes minutes per iteration. Instead: `sudo plymouthd --no-daemon --debug` starts the daemon in the foreground (Ctrl-C to stop); then in a second terminal `sudo plymouth --show-splash` renders the theme. Script errors appear in the first terminal's output. `sudo plymouth quit` tears it down cleanly. This loop — edit script, show-splash, inspect, quit — cuts Plymouth development time dramatically.
 
+
+## 2026-05-19 (session end — kiro-iso audit expansion + riker)
+
+**Tip: Use `declare -A` associative arrays in bash audit scripts for key/expected-value checks — one loop replaces N identical if-blocks**
+Instead of writing a separate `sysctl -n key` + compare block for each security parameter, declare `declare -A expected=([kernel.kptr_restrict]=2 [fs.suid_dumpable]=0 ...)` and loop: `for key in "${!expected[@]}"; do actual=$(sysctl -n "$key"); [[ "$actual" == "${expected[$key]}" ]] && pass ... || fail ...; done`. Adding a new check costs one line in the array, not 4 lines of new code. The same pattern applies to any audit script that checks multiple key/value pairs — file permissions, config values, systemd unit states.
+
+**Tip: When a `-git` AUR package doesn't pick up your latest commit via `paru -S`, copy the binary directly for immediate testing — rebuild the package separately**
+`paru -S pkg-git` reinstalls from the cached `.pkg.tar.zst` if the pkgver hasn't changed, even after a new upstream commit. For rapid iteration during a session (edit → test → edit), use `scp localfile remote:/tmp/file && ssh remote "sudo cp /tmp/file /usr/local/bin/file"` to deploy instantly, then let the package rebuild happen on its own schedule (next `paru -Syu`, or force with `paru -S --rebuild pkg-git`). Never leave the manually copied version in place permanently — it will be overwritten by the next package upgrade.
+
+## 2026-05-19 (session end — kiro-iso security audit)
+
+**Tip: Use `tmpfiles.d` with the `z` directive to enforce file permissions idempotently at every boot — not a one-time chmod**
+`chmod` in a post-install script runs once and can be undone by package updates or upgrades. A `tmpfiles.d` entry like `z /etc/cups/classes.conf 0600 root cups - -` is applied by `systemd-tmpfiles-setup.service` at every boot, making the permission sticky. The `z` type sets ownership and mode only if the path exists — it never creates the file. Use this for any config file whose package ships it world-readable but which contains sensitive data (CUPS printer URIs, credentials, API keys). One file in `/etc/tmpfiles.d/` beats patching the package or scripting around it.
+
+**Tip: `VBoxManage modifyvm --natpf1` only works when the VM is stopped — use `VBoxManage controlvm natpf1` for live VMs**
+`VBoxManage modifyvm "Name" --natpf1 "rule,tcp,,2022,,22"` requires the VM to be in `poweroff`, `saved`, or `aborted` state — running it against a live VM returns an error. For a running VM, use `VBoxManage controlvm "Name" natpf1 "rule,tcp,,2022,,22"` (no `--` prefix, no `modifyvm`). When scripting VM setup, detect state first with `VBoxManage showvminfo --machinereadable | grep '^VMState='` and dispatch to the correct command. Also: when grepping machinereadable output for an existing NAT rule, match `"rulename,` (name + comma) not `"rulename"` — the format is `natpf1="rulename,tcp,,port,,22"` so the closing quote never follows the name directly.
 
 ## 2026-05-19 (session end — Startup-HQ)
 
@@ -1285,3 +1317,27 @@ Before removing a package name, variable, or DE reference, run `grep -rn "term" 
 
 **Tip: Audit README file references with ls before committing — stale paths erode trust faster than missing docs**
 A README that lists files which don't exist (enable-oomd.sh, personal_repo/, packages.bootstrap) is worse than a shorter README, because it tells readers the project is poorly maintained. Before finalising any docs change, run `ls <each-file-or-dir-mentioned>` to verify they exist. For project trees in particular, generate the list from the actual filesystem rather than writing it from memory — `find . -maxdepth 2 -not -path './.git/*'` gives you the ground truth in seconds.
+
+## 2026-05-19 (session end kiro-calamares-config-next promotion)
+
+**Tip: After promoting beta config to production, grep the production repo for the beta suffix before committing**
+When copying files from a `-next` repo to its production sibling, package names, self-removal commands, and debug strings often still reference `-next`. Run `grep -rn "next" --include="*.conf" --include="*.py" --include="*.sh" --include="*.md" --include="PKGBUILD" <production-repo>/ | grep -v "\.git/"` immediately after the file copies and before staging anything. Review every hit: fix stale repo/package name references; leave Python `__next__`/`.next()`, Calamares config keys, and `provides=('<package>-next')` virtual package entries untouched. One missed string (like a `pacman -R <package>-next` in post-install cleanup) will silently fail to remove the installer package on every production install.
+
+**Tip: Pair the config repo to its matching ISO repo — never cross them when suggesting a build command**
+In a project with parallel stable/beta tracks (e.g. `kiro-calamares-config` + `kiro-iso`, `kiro-calamares-config-next` + `kiro-iso-next`), always trigger the ISO build in the repo that matches the config repo you just pushed to. The ISO build pulls the Calamares package from GitHub Pages, which was published by the config repo's CI. Crossing them (building `kiro-iso` after pushing to `kiro-calamares-config-next`) results in the wrong Calamares package being bundled and a confusing mismatch between what was tested and what ships.
+
+## 2026-05-19 (edu-system-files session 3)
+
+**Tip: Add a `--fix` mode to audit scripts with a single `apply_fix` helper — never scatter mode-checks inline**
+An audit script that reports FAILs but can't remediate them forces the user to copy commands from the output manually. Add `FIX_MODE=false`, parse `--fix` in the arg loop, and funnel all fix actions through one helper: `apply_fix "description" cmd [args...]`. In fix mode it prints the description and runs `"$@"` (no eval); in read-only mode it prints a `FIX?  --fix: <description>` hint instead. A single function keeps mode-awareness out of every check function. Important: increment a `FIXED` counter on success and report it in the summary separately from `FAIL` — the failure count reflects what was found pre-fix, and you want to prompt a re-run to confirm, not claim all clears.
+
+**Tip: Never hardcode a version string in a packaged script — query the owning package at runtime**
+A hardcoded `echo "myscript version 1.2.3"` goes stale the moment the package is rebuilt. Use `pacman -Qqo "$(realpath "${BASH_SOURCE[0]}")" 2>/dev/null` to get the package name that owns the running script, then `pacman -Q "$pkg"` to print `<pkg> <version>` from the live package database. Falls back gracefully with `|| echo "$(basename "$0") (not installed via pacman)"` for dev runs from the repo. The output matches the installed version precisely, requires no manual updates, and works for any script in any package.
+
+## 2026-05-19 (edu-system-files session)
+
+**Tip: In kiro-common.sh, `log_error` is the ERR trap handler — never pass it a plain message string**
+`log_error lineno cmd` is wired to `trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR`. Calling it as `log_error "must be root"` treats the string as the line number and wraps it in the full `⚠️ ERROR DETECTED` banner — confusing to users and semantically wrong. For any user-facing error message (root checks, bad arguments, missing dependencies), use `echo "${RED}message${RESET}" >&2; exit 1` instead. `log_error` is only for the trap.
+
+**Tip: `mandb` runs on a daily systemd timer, not at boot — run it manually after deploying new man pages**
+`man-db.timer` fires once daily with up to 12 hours of random delay. A freshly copied `.8` file won't appear in `man kiro<Tab>` completion until the timer fires or you run `sudo mandb` yourself. Any deploy script that installs man pages to `/usr/share/man/` should call `mandb` as its last step, or the user will hit a confusing "no completions" gap that fixes itself overnight.
