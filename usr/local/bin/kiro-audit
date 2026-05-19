@@ -85,6 +85,8 @@ on_error() {
 
 trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
+FIX_MODE=false
+
 for _arg in "$@"; do
     case "$_arg" in
         -h|--help)
@@ -92,11 +94,12 @@ for _arg in "$@"; do
 kiro-audit - Kiro ISO installed system audit
 
 Usage:
-    kiro-audit [--help] [--version]
+    kiro-audit [--help] [--version] [--fix]
 
 Options:
     -h, --help     Show this help message and exit
     -v, --version  Show version information and exit
+    --fix          Auto-remediate known fixable failures (requires root)
 
 Description:
     Comprehensive post-install audit of a Kiro system. Checks kernel,
@@ -105,6 +108,9 @@ Description:
     user groups, systemd services, file permissions, bootloader, and
     package integrity.
 
+    In read-only mode (default), fixable FAILs show a FIX? hint with
+    the command that --fix would run.
+
     Must be run as root: sudo kiro-audit
 
 For more information, visit: https://www.erikdubois.be
@@ -112,8 +118,11 @@ EOF
             exit 0
             ;;
         -v|--version)
-            echo "kiro-audit version 1.0.0"
+            echo "kiro-audit"
             exit 0
+            ;;
+        --fix)
+            FIX_MODE=true
             ;;
     esac
 done
@@ -131,10 +140,28 @@ fi
 PASS=0
 FAIL=0
 WARN=0
+FIXED=0
 
 pass() { echo "  ${GREEN}PASS${RESET}  $1"; PASS=$((PASS + 1)); }
 fail() { echo "  ${RED}FAIL${RESET}  $1"; FAIL=$((FAIL + 1)); }
 warn() { echo "  ${YELLOW}WARN${RESET}  $1"; WARN=$((WARN + 1)); }
+
+# apply_fix "description" cmd [args...]
+# --fix mode: prints description and runs cmd; increments FIXED on success.
+# read-only mode: prints a FIX? hint showing what would run.
+apply_fix() {
+    local msg="$1"; shift
+    if [[ "${FIX_MODE}" == true ]]; then
+        echo "  ${CYAN}FIX${RESET}   ${msg}"
+        if "$@"; then
+            FIXED=$((FIXED + 1))
+        else
+            echo "  ${RED}ERR${RESET}   fix failed: $*"
+        fi
+    else
+        echo "  ${CYAN}FIX?${RESET}  --fix: ${msg}"
+    fi
+}
 
 pkg_installed()  { pacman -Q "$1" &>/dev/null; }
 pkg_missing()    { ! pacman -Q "$1" &>/dev/null; }
@@ -219,16 +246,48 @@ check_calamares_cleanup() {
     fi
 
     # kiro_final live-only artifact cleanup
-    [[ -f /root/.automated_script.sh ]]              && fail "/root/.automated_script.sh archiso leftover present"    || pass "No /root/.automated_script.sh (good)"
-    [[ -f /root/.zlogin ]]                           && fail "/root/.zlogin archiso leftover present"                 || pass "No /root/.zlogin (good)"
-    [[ -d /etc/systemd/system/getty@tty1.service.d ]] && fail "getty@tty1 autologin not cleaned up"                  || pass "getty@tty1 autologin removed (good)"
-    [[ -f /etc/sudoers.d/g_wheel ]]                  && fail "/etc/sudoers.d/g_wheel live-only rule still present"   || pass "/etc/sudoers.d/g_wheel removed (good)"
-    [[ -f /etc/polkit-1/rules.d/49-nopasswd_global.rules ]] && fail "49-nopasswd_global.rules live-only rule still present" || pass "49-nopasswd_global.rules removed (good)"
+    if [[ -f /root/.automated_script.sh ]]; then
+        fail "/root/.automated_script.sh archiso leftover present"
+        apply_fix "rm /root/.automated_script.sh" rm /root/.automated_script.sh
+    else
+        pass "No /root/.automated_script.sh (good)"
+    fi
+
+    if [[ -f /root/.zlogin ]]; then
+        fail "/root/.zlogin archiso leftover present"
+        apply_fix "rm /root/.zlogin" rm /root/.zlogin
+    else
+        pass "No /root/.zlogin (good)"
+    fi
+
+    if [[ -d /etc/systemd/system/getty@tty1.service.d ]]; then
+        fail "getty@tty1 autologin not cleaned up"
+        apply_fix "rm -rf /etc/systemd/system/getty@tty1.service.d" rm -rf /etc/systemd/system/getty@tty1.service.d
+    else
+        pass "getty@tty1 autologin removed (good)"
+    fi
+
+    if [[ -f /etc/sudoers.d/g_wheel ]]; then
+        fail "/etc/sudoers.d/g_wheel live-only rule still present"
+        apply_fix "rm /etc/sudoers.d/g_wheel" rm /etc/sudoers.d/g_wheel
+    else
+        pass "/etc/sudoers.d/g_wheel removed (good)"
+    fi
+
+    if [[ -f /etc/polkit-1/rules.d/49-nopasswd_global.rules ]]; then
+        fail "49-nopasswd_global.rules live-only rule still present"
+        apply_fix "rm /etc/polkit-1/rules.d/49-nopasswd_global.rules" rm /etc/polkit-1/rules.d/49-nopasswd_global.rules
+    else
+        pass "49-nopasswd_global.rules removed (good)"
+    fi
 
     # archiso SSH override — enables PermitRootLogin yes; must be gone post-install
-    [[ -f /etc/ssh/sshd_config.d/10-archiso.conf ]] \
-        && fail "/etc/ssh/sshd_config.d/10-archiso.conf present (PermitRootLogin yes — archiso leftover)" \
-        || pass "10-archiso.conf SSH override removed (good)"
+    if [[ -f /etc/ssh/sshd_config.d/10-archiso.conf ]]; then
+        fail "/etc/ssh/sshd_config.d/10-archiso.conf present (PermitRootLogin yes — archiso leftover)"
+        apply_fix "rm /etc/ssh/sshd_config.d/10-archiso.conf" rm /etc/ssh/sshd_config.d/10-archiso.conf
+    else
+        pass "10-archiso.conf SSH override removed (good)"
+    fi
 }
 
 check_kiro_final_config() {
@@ -329,7 +388,12 @@ check_services() {
     done
 
     # These should NOT be enabled on installed system
-    systemctl is-enabled pacman-init &>/dev/null && fail "pacman-init still enabled (archiso leftover)" || pass "pacman-init not enabled (good)"
+    if systemctl is-enabled pacman-init &>/dev/null; then
+        fail "pacman-init still enabled (archiso leftover)"
+        apply_fix "systemctl mask pacman-init" systemctl mask pacman-init
+    else
+        pass "pacman-init not enabled (good)"
+    fi
     systemctl is-enabled reflector   &>/dev/null && warn "reflector enabled (was this intentional?)" || true
 }
 
@@ -351,17 +415,31 @@ check_permissions() {
     if [[ -f /etc/cups/classes.conf ]]; then
         local cups_class_perm
         cups_class_perm=$(stat -c '%a' /etc/cups/classes.conf)
-        [[ "${cups_class_perm}" == "600" ]] \
-            && pass "/etc/cups/classes.conf permissions: 600" \
-            || fail "/etc/cups/classes.conf permissions wrong: ${cups_class_perm} (expected 600)"
+        if [[ "${cups_class_perm}" == "600" ]]; then
+            pass "/etc/cups/classes.conf permissions: 600"
+        else
+            fail "/etc/cups/classes.conf permissions wrong: ${cups_class_perm} (expected 600)"
+            if [[ -f /etc/tmpfiles.d/cups-permissions.conf ]]; then
+                apply_fix "systemd-tmpfiles --create /etc/tmpfiles.d/cups-permissions.conf" systemd-tmpfiles --create /etc/tmpfiles.d/cups-permissions.conf
+            else
+                apply_fix "chmod 600 /etc/cups/classes.conf" chmod 600 /etc/cups/classes.conf
+            fi
+        fi
     fi
 
     if [[ -f /etc/cups/printers.conf ]]; then
         local cups_printers_perm
         cups_printers_perm=$(stat -c '%a' /etc/cups/printers.conf)
-        [[ "${cups_printers_perm}" == "600" ]] \
-            && pass "/etc/cups/printers.conf permissions: 600" \
-            || fail "/etc/cups/printers.conf permissions wrong: ${cups_printers_perm} (expected 600)"
+        if [[ "${cups_printers_perm}" == "600" ]]; then
+            pass "/etc/cups/printers.conf permissions: 600"
+        else
+            fail "/etc/cups/printers.conf permissions wrong: ${cups_printers_perm} (expected 600)"
+            if [[ -f /etc/tmpfiles.d/cups-permissions.conf ]]; then
+                apply_fix "systemd-tmpfiles --create /etc/tmpfiles.d/cups-permissions.conf" systemd-tmpfiles --create /etc/tmpfiles.d/cups-permissions.conf
+            else
+                apply_fix "chmod 600 /etc/cups/printers.conf" chmod 600 /etc/cups/printers.conf
+            fi
+        fi
     fi
 }
 
@@ -545,10 +623,15 @@ main() {
     echo "  ${GREEN}PASS: ${PASS}${RESET}"
     echo "  ${YELLOW}WARN: ${WARN}${RESET}"
     echo "  ${RED}FAIL: ${FAIL}${RESET}"
+    [[ "${FIX_MODE}" == true ]] && echo "  ${CYAN}FIXED: ${FIXED}${RESET}"
     echo
 
     if [[ ${FAIL} -gt 0 ]]; then
-        log_error "Audit completed with ${FAIL} failure(s)"
+        if [[ "${FIX_MODE}" == true && ${FIXED} -gt 0 ]]; then
+            log_warn "Audit found ${FAIL} failure(s); ${FIXED} fix(es) applied — re-run to confirm"
+        else
+            log_error "Audit completed with ${FAIL} failure(s)"
+        fi
         exit 1
     elif [[ ${WARN} -gt 0 ]]; then
         log_warn "Audit completed with ${WARN} warning(s)"
