@@ -420,11 +420,6 @@ check_permissions() {
     [[ "${shadow_perm}"  == "400" ]] && pass "/etc/shadow permissions: 400"   || fail "/etc/shadow permissions wrong: ${shadow_perm} (expected 400)"
     [[ "${gshadow_perm}" == "400" ]] && pass "/etc/gshadow permissions: 400"  || fail "/etc/gshadow permissions wrong: ${gshadow_perm} (expected 400)"
 
-    # CUPS config files — world-readable in older Kiro; fixed via tmpfiles.d
-    [[ -f /etc/tmpfiles.d/cups-permissions.conf ]] \
-        && pass "/etc/tmpfiles.d/cups-permissions.conf present" \
-        || fail "/etc/tmpfiles.d/cups-permissions.conf missing (CUPS config permissions not enforced)"
-
     if [[ -f /etc/cups/classes.conf ]]; then
         local cups_class_perm
         cups_class_perm=$(stat -c '%a' /etc/cups/classes.conf)
@@ -432,11 +427,7 @@ check_permissions() {
             pass "/etc/cups/classes.conf permissions: 600"
         else
             fail "/etc/cups/classes.conf permissions wrong: ${cups_class_perm} (expected 600)"
-            if [[ -f /etc/tmpfiles.d/cups-permissions.conf ]]; then
-                apply_fix "systemd-tmpfiles --create /etc/tmpfiles.d/cups-permissions.conf" systemd-tmpfiles --create /etc/tmpfiles.d/cups-permissions.conf
-            else
-                apply_fix "chmod 600 /etc/cups/classes.conf" chmod 600 /etc/cups/classes.conf
-            fi
+            apply_fix "chmod 600 /etc/cups/classes.conf" chmod 600 /etc/cups/classes.conf
         fi
     fi
 
@@ -447,11 +438,7 @@ check_permissions() {
             pass "/etc/cups/printers.conf permissions: 600"
         else
             fail "/etc/cups/printers.conf permissions wrong: ${cups_printers_perm} (expected 600)"
-            if [[ -f /etc/tmpfiles.d/cups-permissions.conf ]]; then
-                apply_fix "systemd-tmpfiles --create /etc/tmpfiles.d/cups-permissions.conf" systemd-tmpfiles --create /etc/tmpfiles.d/cups-permissions.conf
-            else
-                apply_fix "chmod 600 /etc/cups/printers.conf" chmod 600 /etc/cups/printers.conf
-            fi
+            apply_fix "chmod 600 /etc/cups/printers.conf" chmod 600 /etc/cups/printers.conf
         fi
     fi
 }
