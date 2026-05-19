@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 2026.05.19 (session 4)
+
+**What Changed**
+Removed the stale `cups-permissions.conf` tmpfiles.d check from `kiro-audit` — the file is no longer deployed on the system.
+
+**Technical Details**
+- Dropped the `[[ -f /etc/tmpfiles.d/cups-permissions.conf ]]` presence check that would FAIL if the file was absent.
+- Simplified `classes.conf` and `printers.conf` fix branches: removed the conditional that called `systemd-tmpfiles --create`; both now always use `chmod 600` directly.
+
+**Files Modified**
+- `usr/local/bin/kiro-audit`
+
+---
+
 ## 2026.05.19 (session 3)
 
 **What Changed**
