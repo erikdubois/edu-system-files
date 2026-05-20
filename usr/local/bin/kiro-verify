@@ -7,6 +7,14 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Verifies a Kiro system's configuration is correctly applied — a fast
+#   post-install sanity check (lighter than kiro-audit).
+#
+#   Why: quick "did the install actually apply what it should have"
+#   gate, designed to run from Calamares finish hooks or by users
+#   immediately after first boot.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

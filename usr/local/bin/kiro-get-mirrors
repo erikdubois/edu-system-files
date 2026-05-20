@@ -7,6 +7,13 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Updates the pacman mirrorlist using reflector.
+#
+#   Why: alternative to kiro-fix-mirrors (which uses rate-mirrors);
+#   reflector is the older / more-standard Arch tool, kept available
+#   for users who prefer it.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

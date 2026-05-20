@@ -7,6 +7,14 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Copies /etc/skel/ into the current user's home directory, taking a
+#   timestamped backup of ~/.config first.
+#
+#   Why: lets a user re-apply the Kiro default configs to an existing
+#   account without nuking personal data; the ~/.config backup is the
+#   safety net.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

@@ -7,6 +7,14 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Identifies the active GPU driver and OpenGL renderer
+#   (NVIDIA / AMD / Intel / virtio / etc.).
+#
+#   Why: many troubleshooting steps branch on GPU type; this is the
+#   canonical detector so other scripts and humans agree on what's
+#   running.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

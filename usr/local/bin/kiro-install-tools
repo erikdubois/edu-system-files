@@ -7,6 +7,14 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Installs a curated set of development and desktop tools (Erik's
+#   standard environment package list).
+#
+#   Why: equivalent of a one-shot "make this freshly-installed Kiro
+#   feel like home" — saves typing pacman -S for the same 50+ packages
+#   every time.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

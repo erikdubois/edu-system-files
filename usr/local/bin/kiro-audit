@@ -7,9 +7,17 @@ set -euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
-#####################################################################
-# Run this script on an installed Kiro system to verify the install
-# is correct. Add new checks over time. Run monthly.
+#   Purpose:
+#   Comprehensive post-install audit of a Kiro system. Checks kernel,
+#   microcode, mkinitcpio, audio stack, Calamares cleanup, kiro_final
+#   configuration, pacman repositories, desktop environments, SDDM,
+#   user groups, systemd services, file permissions, bootloader, and
+#   package integrity. `--fix` auto-remediates known issues. Run as root.
+#
+#   Why: verifies an installed Kiro system matches the intended
+#   specification; catches drift between what the ISO is supposed to
+#   deliver and what's actually on the machine. Run monthly.
+#
 #####################################################################
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"

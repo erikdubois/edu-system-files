@@ -7,6 +7,17 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Static config analyser for Kiro system configuration files. Checks
+#   for duplicate sysctl keys, invalid modprobe parameters, cross-file
+#   setting conflicts, and unreachable udev ATTR write targets. Can be
+#   pointed at the live / filesystem or at the edu-system-files source
+#   tree via --source.
+#
+#   Why: catches config bugs before they ship — duplicate sysctls,
+#   invalid params, conflicting settings — that would otherwise only
+#   surface as silent misconfiguration on user systems.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

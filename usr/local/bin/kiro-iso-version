@@ -7,6 +7,12 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Prints the Kiro ISO version string from /etc/dev-rel.
+#
+#   Why: lets users (and ATT) report which ISO produced this install —
+#   useful for support tickets and version-conditional behavior.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

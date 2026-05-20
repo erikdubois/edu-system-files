@@ -7,6 +7,13 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Ranks and updates the pacman mirrorlist using rate-mirrors.
+#
+#   Why: fresh installs often inherit slow or dead mirrors; ranking by
+#   speed dramatically improves pacman performance. See also
+#   kiro-get-mirrors (reflector-based alternative).
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

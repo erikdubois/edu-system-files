@@ -8,6 +8,16 @@
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Sets PCI bus latency timers for all devices to a uniform value via
+#   setpci.
+#
+#   Why: old or specific hardware sometimes benefits from a manual PCI
+#   latency setting for stability or performance; normalising avoids
+#   per-device tuning. (set -Euo pipefail is intentionally omitted —
+#   setpci returns non-zero on PCIe root ports and other devices that
+#   don't implement the latency timer register.)
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

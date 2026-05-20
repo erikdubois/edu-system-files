@@ -7,6 +7,13 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Fixes pacman keys and GPG configuration — refreshes archlinux-keyring,
+#   repopulates keyrings, reloads chaotic-keyring and nemesis-keyring.
+#
+#   Why: "invalid or corrupted package (PGP signature)" errors are the
+#   most common pacman failure mode; this is the canonical recovery.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

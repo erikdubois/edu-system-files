@@ -7,6 +7,14 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Prints Kiro system diagnostic information — ISO version, kernel,
+#   BIOS/UEFI mode, mounted filesystems, display manager, X11/Wayland
+#   session, installed/running kernels, NVIDIA driver/package status.
+#
+#   Why: single-command snapshot of system state for support,
+#   troubleshooting, and the kiro-diag page planned in ATT.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

@@ -7,6 +7,13 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Replaces /etc/pacman.conf with the Kiro default.
+#
+#   Why: user edits or a broken upgrade can leave /etc/pacman.conf in a
+#   bad state; resetting to the Kiro default restores the expected repo
+#   set (including nemesis and chaotic-aur).
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

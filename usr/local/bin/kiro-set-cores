@@ -7,6 +7,13 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Configures /etc/makepkg.conf to use all available CPU cores for
+#   parallel compilation (MAKEFLAGS=-jN, threaded compression).
+#
+#   Why: makepkg defaults to single-threaded; on multi-core systems
+#   this dramatically speeds up AUR builds.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh

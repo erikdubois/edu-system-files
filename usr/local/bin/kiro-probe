@@ -7,6 +7,12 @@ set -Euo pipefail
 #
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
+#   Purpose:
+#   Uploads a hardware probe to linux-hardware.org (via hw-probe).
+#
+#   Why: builds community-visible hardware compatibility data for Kiro
+#   installs — useful for the project's hardware support story.
+#
 ##################################################################################################################
 
 # shellcheck source=/usr/local/lib/kiro-common.sh
