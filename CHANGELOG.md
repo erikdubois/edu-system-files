@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 2026.05.22
+
+**What Changed**
+Moved the `systemd-logind.service.d/10-kiro-session.conf` drop-in out of `multi-user.target.wants/` to the canonical `systemd-logind.service.d/` path so its settings are actually applied on Kiro installs.
+
+**Technical Details**
+- Drop-in was nested at `etc/systemd/system/multi-user.target.wants/systemd-logind.service.d/10-kiro-session.conf`. systemd parses `*.target.wants/` as a list of symlinks-to-units, not a place for service override directories, so it logged at every boot and every `daemon-reload`: `multi-user.target: Wants dependency dropin .../systemd-logind.service.d is not a symlink, ignoring`. The drop-in (`TimeoutStopSec=10s`, `Restart=on-failure`, `RestartSec=5s`, `KillMode=mixed`, `KillSignal=SIGTERM`) was being silently discarded on every install that shipped this package.
+- Fix is a pure `git mv` to `etc/systemd/system/systemd-logind.service.d/10-kiro-session.conf` — no content change. Sibling `pci-latency.service` symlink in `multi-user.target.wants/` was already correct and was left in place.
+- Found by `journalctl -p err -b` on picard (bare-metal Kiro v26.05.19), then traced to the package via `pacman -Qo`.
+
+**Files Modified**
+- `etc/systemd/system/systemd-logind.service.d/10-kiro-session.conf` (moved from `multi-user.target.wants/`)
+
 ## 2026.05.21
 
 **What Changed**
