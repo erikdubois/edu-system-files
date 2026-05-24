@@ -2,8 +2,8 @@
 # Optimizes I/O performance for different device types
 # Imported from EndeavourOS standards
 
-# SSD: no BFQ tuning — 60-io-scheduler.rules sets SSDs to mq-deadline;
-# queue/iosched/ does not exist under mq-deadline so slice_idle_us is unavailable.
+# SSD: no iosched tuning here. 60-io-scheduler.rules sets non-rotating sd*/mmcblk
+# disks to mq-deadline, whose defaults already suit SSDs.
 
 # NVMe: Reduce polling delay for responsiveness
 ACTION=="add|change", KERNEL=="nvme[0-9]*n[0-9]*", \
