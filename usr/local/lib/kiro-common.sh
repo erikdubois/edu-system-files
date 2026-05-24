@@ -255,8 +255,6 @@ ${BOLD}Examples:${RESET}
     ${script_name} --help
     ${script_name} --version
     ${script_name} --dry-run [other arguments]
-
-For more information, visit: https://www.arcolinux.info
 EOF
 }
 

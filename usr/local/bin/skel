@@ -63,7 +63,6 @@ main() {
     echo
     echo "Useful when a tiling WM is crashing — run skel in a terminal or TTY to recover."
     echo
-    echo "More info: https://arcolinux.com/updating-your-system-with-skel-and-still-keeping-your-own-settings/"
     echo "##################################################################################"
 
     if [[ "$DRY_RUN" == "false" ]]; then
