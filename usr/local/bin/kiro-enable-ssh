@@ -51,10 +51,7 @@ main() {
         esac
     done
 
-    if [[ $EUID -ne 0 ]]; then
-        echo "${RED}This script must be run as root.${RESET}" >&2
-        exit 1
-    fi
+    ensure_root "$@"
 
     log_section "Enabling SSH"
 

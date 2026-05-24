@@ -169,6 +169,24 @@ require_root_tools() {
     done
 }
 
+# Re-run the calling script as root if it isn't already root.
+# In a graphical session this pops up a polkit password dialog (pkexec);
+# over SSH/tty it falls back to a terminal sudo prompt. A no-op when already
+# root. Call as `ensure_root "$@"` so the original arguments survive the re-exec.
+ensure_root() {
+    [[ $EUID -eq 0 ]] && return 0
+    trap - ERR
+    local self
+    self="$(realpath "${BASH_SOURCE[-1]}")"
+    if [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]] && command -v pkexec >/dev/null 2>&1; then
+        echo "${YELLOW}$(basename "$self") needs root — requesting your password...${RESET}" >&2
+        # pkexec scrubs the environment; pass TERM through to keep colored output.
+        exec pkexec env TERM="${TERM:-xterm-256color}" "$self" "$@"
+    fi
+    echo "${YELLOW}$(basename "$self") needs root — re-running with sudo...${RESET}" >&2
+    exec sudo "$self" "$@"
+}
+
 # Pause if DEBUG mode is enabled
 pause_if_debug() {
     if [[ "${DEBUG:-false}" == true ]]; then

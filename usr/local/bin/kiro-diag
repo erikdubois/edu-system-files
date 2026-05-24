@@ -288,13 +288,16 @@ section_bluetooth() {
 
     if systemctl is-active --quiet bluetooth 2>/dev/null; then
         _field "Service" "active"
+        # bluetoothctl talks to bluetoothd over D-Bus and can block indefinitely
+        # (e.g. a wedged adapter), so cap it with a timeout.
+        local adapter
+        adapter=$(timeout 3 bluetoothctl show 2>/dev/null | grep -E 'Name:|Powered:|Discoverable:' | sed 's/^\s*//' | tr '\n' '  ' || true)
+        _field "Adapter" "${adapter:-none found}"
     else
+        # Service down means no daemon to answer — bluetoothctl would hang, so skip it.
         _field "Service" "inactive"
+        _field "Adapter" "(bluetooth service inactive)"
     fi
-
-    local adapter
-    adapter=$(bluetoothctl show 2>/dev/null | grep -E 'Name:|Powered:|Discoverable:' | sed 's/^\s*//' | tr '\n' '  ' || echo "no adapter")
-    _field "Adapter" "${adapter:-none found}"
 }
 
 section_temps() {
@@ -334,11 +337,7 @@ main() {
         esac
     done
 
-    if [[ $EUID -ne 0 ]]; then
-        echo "${RED}Run kiro-diag with root privileges: sudo kiro-diag${RESET}" >&2
-        trap - ERR
-        exit 1
-    fi
+    ensure_root "$@"
 
     log_section "Kiro System Diagnostics"
 

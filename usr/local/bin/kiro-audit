@@ -138,11 +138,7 @@ EOF
 done
 unset _arg
 
-if [[ $EUID -ne 0 ]]; then
-    echo "Run kiro-audit with root privileges: sudo kiro-audit"
-    trap - ERR
-    exit 1
-fi
+ensure_root "$@"
 
 #####################################################################
 # Counters

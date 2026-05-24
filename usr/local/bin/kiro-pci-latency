@@ -52,11 +52,7 @@ for _arg in "$@"; do
 done
 unset _arg
 
-if [[ $EUID -ne 0 ]]; then
-    log_error "Run as root: sudo pci-latency"
-    trap - ERR
-    exit 1
-fi
+ensure_root "$@"
 
 if ! command -v setpci > /dev/null 2>&1; then
     log_error "setpci not found — install pciutils"
