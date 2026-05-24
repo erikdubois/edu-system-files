@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026.05.25
+
+**What Changed**
+- Removed the dead HDD `fifo_batch` tuning rule from `60-ioschedulers-tuning.rules`. It set `ATTR{queue/iosched/fifo_batch}="32"` on rotating `sd*` disks, but `60-io-scheduler.rules` puts those same disks on BFQ, and BFQ exposes no `fifo_batch` (it is an mq-deadline tunable) — so the write always silently no-oped. This was the `[FAIL]` newly surfaced by the 2026.05.24 kiro-lint block-device ATTR-target fix. Confirmed on the Kiro VB VM: `sda` is `rotational=1` on `[bfq]`, and its `queue/iosched/` dir contains `slice_idle`/`low_latency`/… but no `fifo_batch`.
+
+**Technical Details**
+- The rule's own comment was self-contradictory ("sets HDDs to BFQ, so fifo_batch is available" — BFQ is precisely why it is *not* available). Replaced the rule + comment with a comment documenting why no iosched tuning happens here (HDDs run BFQ, whose defaults already suit mechanical disks). The NVMe `io_poll_delay` rule in the same file is unaffected and still verifies PASS.
+
+**Files Modified**
+- `etc/udev/rules.d/60-ioschedulers-tuning.rules`
+
 ## 2026.05.24
 
 **What Changed**
