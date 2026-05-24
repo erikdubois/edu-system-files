@@ -2,7 +2,7 @@
 
 ##################################################################################################################################
 # Kiro Common Library - Shared utilities for all Kiro/EDU system scripts
-# Source: Based on arcolinux-nemesis/common/common.sh
+# Source: Kiro common shell library
 # Purpose: Provide consistent logging, error handling, and utility functions across all scripts
 #
 # Usage:
@@ -283,8 +283,7 @@ show_version() {
     
     echo "${BOLD}${GREEN}${script_name}${RESET} version ${version}"
     echo "Created: 2026-04-20"
-    echo "Based on: arcolinux-nemesis/common/common.sh"
-    echo "Website: https://www.arcolinux.info"
+    echo "Website: https://kiroproject.be"
 }
 
 # Execute command with dry-run support

@@ -55,33 +55,18 @@ main() {
     log_section "Getting /etc/pacman.conf"
 
     local local_pacman="/usr/local/share/kiro/pacman.conf"
-    local github_url="https://raw.githubusercontent.com/erikdubois/arcolinux-nemesis/refs/heads/master/pacman.conf"
 
-    if [[ -f "${local_pacman}" ]]; then
-        log_subsection "Using local pacman.conf"
-        if execute_or_dryrun "Copy local pacman.conf to /etc/pacman.conf" sudo cp "${local_pacman}" /etc/pacman.conf; then
-            log_success "pacman.conf copied from local system"
-            return 0
-        else
-            log_warn "Failed to copy local pacman.conf"
-            exit 1
-        fi
+    if [[ ! -f "${local_pacman}" ]]; then
+        echo "${RED}Local pacman.conf not found at: ${local_pacman} — cannot proceed${RESET}" >&2
+        exit 1
     fi
 
-    log_info "Local pacman.conf not found at: ${local_pacman}"
-    log_subsection "Checking internet connectivity"
-
-    if check_connectivity 3 8.8.8.8; then
-        log_subsection "Downloading latest pacman.conf from GitHub"
-        if execute_or_dryrun "Download pacman.conf from GitHub" sudo wget "${github_url}" -O /etc/pacman.conf; then
-            log_success "pacman.conf downloaded successfully"
-            return 0
-        else
-            log_warn "Failed to download pacman.conf from GitHub"
-            exit 1
-        fi
+    log_subsection "Using local pacman.conf"
+    if execute_or_dryrun "Copy local pacman.conf to /etc/pacman.conf" sudo cp "${local_pacman}" /etc/pacman.conf; then
+        log_success "pacman.conf copied from local system"
+        return 0
     else
-        echo "${RED}No internet connectivity — cannot proceed: no local file and no internet${RESET}" >&2
+        log_warn "Failed to copy local pacman.conf"
         exit 1
     fi
 }
