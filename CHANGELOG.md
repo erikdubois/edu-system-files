@@ -3,6 +3,8 @@
 ## 2026.05.25
 
 **What Changed**
+- `kiro-audit` bootloader detection made robust. The UEFI branch now identifies systemd-boot via `bootctl is-installed` (authoritative ESP state) instead of grepping `efibootmgr` for the literal label `Linux Boot Manager`, and the GRUB checks (UEFI and BIOS) now also accept the `grub` package being installed, not just a `/boot/grub` directory. Previously a systemd-boot machine could report `WARN UEFI system but bootloader type unclear` when efibootmgr was unavailable or the firmware entry was relabeled — surfaced on a systemd-boot install during a system audit.
+
 - Removed the dead HDD `fifo_batch` tuning rule from `60-ioschedulers-tuning.rules`. It set `ATTR{queue/iosched/fifo_batch}="32"` on rotating `sd*` disks, but `60-io-scheduler.rules` puts those same disks on BFQ, and BFQ exposes no `fifo_batch` (it is an mq-deadline tunable) — so the write always silently no-oped. This was the `[FAIL]` newly surfaced by the 2026.05.24 kiro-lint block-device ATTR-target fix. Confirmed on the Kiro VB VM: `sda` is `rotational=1` on `[bfq]`, and its `queue/iosched/` dir contains `slice_idle`/`low_latency`/… but no `fifo_batch`.
 
 - Corrected the SSD comment in the same file. It claimed "queue/iosched/ does not exist under mq-deadline so slice_idle_us is unavailable" — both wrong: mq-deadline *does* expose `queue/iosched/` (with `fifo_batch`, `read_expire`, etc.), and `slice_idle_us` is a BFQ tunable, not mq-deadline's. The conclusion (no SSD tuning) was always fine; the reasoning was false. Rewritten to state SSDs run mq-deadline, whose defaults already suit them.

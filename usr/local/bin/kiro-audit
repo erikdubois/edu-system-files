@@ -704,16 +704,16 @@ check_bootloader() {
 
     if [[ -d /sys/firmware/efi ]]; then
         pass "System booted via UEFI"
-        if command -v bootctl &>/dev/null && efibootmgr 2>/dev/null | grep -qi 'Linux Boot Manager'; then
+        if command -v bootctl &>/dev/null && [[ "$(bootctl is-installed 2>/dev/null)" == "yes" ]]; then
             pass "systemd-boot is installed"
-        elif [[ -d /boot/grub ]]; then
+        elif [[ -d /boot/grub ]] || pkg_installed grub; then
             pass "GRUB EFI bootloader detected"
         else
             warn "UEFI system but bootloader type unclear"
         fi
     else
         pass "System booted via BIOS"
-        [[ -d /boot/grub ]] && pass "GRUB BIOS bootloader detected" || warn "BIOS system but no GRUB found"
+        { [[ -d /boot/grub ]] || pkg_installed grub; } && pass "GRUB BIOS bootloader detected" || warn "BIOS system but no GRUB found"
     fi
 }
 
