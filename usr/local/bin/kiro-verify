@@ -449,6 +449,13 @@ check_systemd_units() {
     else
         warn_check "Systemd zram-setup@zram0: state=$zram_state"
     fi
+
+    # firewalld — shipped + enabled via Calamares; a user may disable it (warn, not fail)
+    if systemctl is-enabled firewalld &>/dev/null; then
+        ok "firewalld.service enabled"
+    else
+        warn_check "firewalld.service not enabled"
+    fi
 }
 
 ##################################################################################################################

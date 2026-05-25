@@ -433,6 +433,14 @@ check_services() {
     systemctl is-enabled ananicy-cpp &>/dev/null \
         && pass "ananicy-cpp.service enabled" \
         || fail "ananicy-cpp.service not enabled"
+
+    # firewalld — shipped on the ISO and enabled via Calamares (security baseline)
+    pkg_installed firewalld \
+        && pass "firewalld installed" \
+        || warn "firewalld not installed"
+    systemctl is-enabled firewalld &>/dev/null \
+        && pass "firewalld.service enabled" \
+        || warn "firewalld.service not enabled"
 }
 
 check_permissions() {

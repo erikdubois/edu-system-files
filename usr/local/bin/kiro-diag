@@ -168,6 +168,17 @@ section_network() {
         addr=$(awk '{print $3}' <<< "$line")
         _field "$iface  [$state]" "${addr:-(no address)}"
     done < <(ip -br addr show | grep -v '^lo' || true)
+
+    local fw_status
+    if ! command -v firewall-cmd &>/dev/null; then
+        fw_status="not installed"
+    else
+        local en act
+        systemctl is-enabled firewalld &>/dev/null && en="enabled" || en="disabled"
+        systemctl is-active --quiet firewalld 2>/dev/null && act="active" || act="inactive"
+        fw_status="$en, $act"
+    fi
+    _field "Firewall (firewalld)" "$fw_status"
 }
 
 section_desktop() {
