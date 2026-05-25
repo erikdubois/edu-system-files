@@ -1,6 +1,6 @@
 .TH KIRO-ENABLE-SSH 8 "2026-05-19" "Kiro" "Kiro System Tools"
 .SH NAME
-kiro-enable-ssh \- install openssh and enable the sshd service
+kiro-enable-ssh \- install openssh, enable sshd, and allow SSH through the firewall
 .SH SYNOPSIS
 .B kiro-enable-ssh
 [\fB\-h\fR|\fB\-\-help\fR]
@@ -10,9 +10,13 @@ kiro-enable-ssh \- install openssh and enable the sshd service
 .B kiro-enable-ssh
 installs the
 .B openssh
-package and immediately enables and starts the
+package, immediately enables and starts the
 .B sshd
-systemd service so the machine becomes reachable via SSH in a single step.
+systemd service, and \(em when
+.B firewalld
+is present \(em allows the
+.B ssh
+service through the firewall so the machine becomes reachable via SSH in a single step.
 .PP
 Must be run as root.
 .PP
@@ -27,6 +31,18 @@ Enables and starts the
 .B sshd
 service via
 .BR systemctl\ enable\ --now\ sshd .
+.IP 3. 4
+When
+.B firewall-cmd
+is available, permanently allows the
+.B ssh
+service in firewalld via
+.BR firewall-cmd\ --permanent\ --add-service=ssh ,
+reloading the daemon if it is running.
+Skipped silently when firewalld is not installed.
+This step is idempotent \(em if ssh is already allowed (firewalld's default
+.B public
+zone permits it) the command is a harmless no-op.
 .SH OPTIONS
 .TP
 .BR \-h ", " \-\-help
@@ -71,6 +87,7 @@ sudo kiro-enable-ssh
 .SH SEE ALSO
 .BR pacman (8),
 .BR sshd (8),
-.BR systemctl (1)
+.BR systemctl (1),
+.BR firewall-cmd (1)
 .SH AUTHOR
 Erik Dubois <https://www.erikdubois.be>

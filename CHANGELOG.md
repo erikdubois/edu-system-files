@@ -7,11 +7,16 @@
 
 - Corrected the SSD comment in the same file. It claimed "queue/iosched/ does not exist under mq-deadline so slice_idle_us is unavailable" — both wrong: mq-deadline *does* expose `queue/iosched/` (with `fifo_batch`, `read_expire`, etc.), and `slice_idle_us` is a BFQ tunable, not mq-deadline's. The conclusion (no SSD tuning) was always fine; the reasoning was false. Rewritten to state SSDs run mq-deadline, whose defaults already suit them.
 
+- `kiro-enable-ssh` now opens SSH in the firewall as well as enabling the service. After enabling `sshd` it allows the `ssh` service in firewalld (`firewall-cmd --permanent --add-service=ssh`, then `--reload` if the daemon is running). Previously the script only installed/enabled sshd and silently relied on firewalld's default `public` zone keeping `ssh` open — so on any hardened or non-default zone the "one-command opt-in" would report success yet leave the user unreachable. Discovered while connecting to picard, whose firewalld is active: SSH worked (default zone permits it) but ICMP and mDNS were dropped, so `picard.local` would not resolve and only the LAN IP worked.
+
 **Technical Details**
 - The HDD rule's own comment was self-contradictory ("sets HDDs to BFQ, so fifo_batch is available" — BFQ is precisely why it is *not* available). Replaced the rule + comment with a comment documenting why no iosched tuning happens here (HDDs run BFQ, whose defaults already suit mechanical disks). The NVMe `io_poll_delay` rule in the same file is unaffected and still verifies PASS.
+- *(kiro-enable-ssh)* The firewall step is guarded by `command -v firewall-cmd` so it is skipped silently when firewalld is not installed, and the `--reload` only runs when `systemctl is-active --quiet firewalld` succeeds (so `--permanent` still writes the config offline if firewalld is stopped). The `--add-service` is idempotent — firewalld returns `ALREADY_ENABLED` (exit 0) when the rule is already present, so it is safe under the script's `set -Euo pipefail` + ERR trap. Header `Purpose`/`Why`, the `--help` description, and the man page (NAME, DESCRIPTION, a new step 3, and a `firewall-cmd(1)` SEE ALSO) were updated to match.
 
 **Files Modified**
 - `etc/udev/rules.d/60-ioschedulers-tuning.rules`
+- `usr/local/bin/kiro-enable-ssh`
+- `usr/share/man/man8/kiro-enable-ssh.8`
 
 ## 2026.05.24
 
