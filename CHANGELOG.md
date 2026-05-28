@@ -2,6 +2,22 @@
 
 ## 2026.05.28
 
+### `show_version` — query pacman at runtime instead of hardcoding
+
+**What Changed**
+- `show_version()` in `kiro-common.sh` was printing a hardcoded `version 1.0.0` + frozen `Created: 2026-04-20` line for 17 of the 18 `usr/local/bin/` scripts — directly violating the repo's own "Never hardcode a version string. Query the owning package." rule in CLAUDE.md. Only `kiro-audit` did it correctly (inline). The helper now resolves the caller's path and queries `pacman -Qqo` → `pacman -Q`, so `--version` matches what pacman knows; falls back to `<script> (not installed via pacman)` when run from a source tree. One central fix lifts all 17 scripts at once.
+
+**Technical Details**
+- Second parameter to `show_version` is now the script path (defaults to `$0`), so call sites that pass `"$0"` or `"$(basename "$0")"` continue to work; passing `${BASH_SOURCE[0]}` from a caller gives the most accurate resolution under symlinks.
+- Uses `realpath` to follow symlinks before the pacman lookup (matches `kiro-audit`'s working pattern). `kiro-audit`'s inline implementation is left as-is for now — it can be migrated to the helper in a follow-up, no functional difference.
+
+**Files Modified**
+- `usr/local/lib/kiro-common.sh`
+
+---
+
+### `kiro-audit` is now **kernel-agnostic**
+
 **What Changed**
 - `kiro-audit` is now **kernel-agnostic**. It used to hardcode `linux-lqx` in `check_kernel` and `check_mkinitcpio`, so any non-lqx Kiro install (linux-zen / linux-hardened / linux-cachyos / multi-kernel) reported 6 spurious FAILs — proven on a CachyOS install 2026-05-27 (`7.0.10-1-cachyos` installed cleanly, audit FAILed on "expected linux-lqx" + missing lqx vmlinuz/initramfs/packages/preset). Detection now happens at runtime; whatever kernel ships, the audit validates it. Last hardcoded component of the kernel-agnostic set — build-side selector (`kiro-iso-next`) and installer (`kiro_kernel` in `kiro-calamares-config-next`) were already done.
 

@@ -277,13 +277,20 @@ EOF
 }
 
 # Show version information
+# Queries the owning pacman package at runtime; never hardcodes a version.
+# Caller may pass the script path as $2 (defaults to $0) so the lookup
+# resolves correctly even when the script is invoked via a symlink.
 show_version() {
     local script_name="$1"
-    local version="${2:-1.0.0}"
-    
-    echo "${BOLD}${GREEN}${script_name}${RESET} version ${version}"
-    echo "Created: 2026-04-20"
-    echo "Website: https://kiroproject.be"
+    local script_path="${2:-$0}"
+    local resolved pkg
+
+    resolved="$(realpath "${script_path}" 2>/dev/null || echo "${script_path}")"
+    if pkg="$(pacman -Qqo "${resolved}" 2>/dev/null)" && [[ -n "${pkg}" ]]; then
+        pacman -Q "${pkg}"
+    else
+        echo "${script_name} (not installed via pacman)"
+    fi
 }
 
 # Execute command with dry-run support
