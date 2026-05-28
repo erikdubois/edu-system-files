@@ -16,6 +16,24 @@
 - `usr/local/bin/kiro-audit`
 - `usr/share/man/man8/kiro-audit.8`
 
+---
+
+### `kiro-enable-ssh`: pacman -Sy + liveuser password on the live ISO
+
+**What Changed**
+- `kiro-enable-ssh` now refreshes the pacman database (`pacman -Sy`) before installing openssh — the live ISO's seeded `/var/lib/pacman/sync/` can be empty or stale, so without this the install would fail (or warn loudly).
+- On the **live ISO only** (detected via `/run/archiso/bootmnt`), the script now sets `liveuser`'s password to `erik`. Without a password, sshd's password auth refuses the login even after the daemon is up — so the previously-correct opt-in was silently unusable for `liveuser`. The earlier "live sshd is root-only" assumption was wrong: the airootfs `sshd_config.d/10-archiso.conf` permits `PasswordAuthentication yes` + `PermitRootLogin yes` with no `AllowUsers`/`DenyUsers` restriction — the real blocker was just the missing password.
+
+**Technical Details**
+- New step ordering in `main()`: refresh pacman db → install openssh → enable sshd → open firewall → set liveuser password (live-ISO-gated).
+- `/run/archiso/bootmnt` is the canonical live-ISO marker (archiso always mounts the boot medium there). On an installed system the directory doesn't exist → the password step is a no-op, preserving install-side behaviour.
+- The password step uses `bash -c "echo 'liveuser:erik' | chpasswd"` wrapped in `execute_or_dryrun` so `--dry-run` reports the action without making the change.
+- Purpose / Why header updated to document both additions.
+- `bash -n` clean.
+
+**Files Modified**
+- `usr/local/bin/kiro-enable-ssh`
+
 ## 2026.05.26
 
 **What Changed**
