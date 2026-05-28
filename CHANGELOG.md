@@ -2,6 +2,22 @@
 
 ## 2026.05.28
 
+### `kiro-audit` — new `check_tuned_profile` for the tuned-ppd pin
+
+**What Changed**
+- New audit section asserts `/etc/tuned/ppd_base_profile == performance` and `tuned-adm active == throughput-performance`. Catches the regression where the upstream `tuned` package's pacman install writes `ppd_base_profile=balanced` into the install target, short-circuiting `ppd.conf`'s `default=performance` fallback. Two bare-metal installs (Picard + Riker, both v26.05.28) landed on `balanced` instead of `throughput-performance` — kiro-audit gave 128/0/0 because it had no tuned-side check. This closes the gap so the kiro_final pin (kiro-calamares-config side) is verifiable instead of silent.
+- Paired with the kiro_final write in [kiro-calamares-config](/home/erik/KIRO/kiro-calamares-config/CHANGELOG.md) — the write fixes the install, the audit check guarantees we notice if the pin is ever lost again.
+
+**Technical Details**
+- Helper handles the "tuned not installed" case (warn, skip), the missing-`tuned-adm`-binary case (warn, skip), and unknown active-profile string (fail with the actual value). Section title `tuned-ppd power profile`. Kernel-agnostic (tuned/tuned-ppd are not kernel-tied).
+- Called between `check_resolved_config` and `check_tumbler` in `main()`.
+- `bash -n` clean.
+
+**Files Modified**
+- `usr/local/bin/kiro-audit`
+
+---
+
 ### `show_version` — query pacman at runtime instead of hardcoding
 
 **What Changed**

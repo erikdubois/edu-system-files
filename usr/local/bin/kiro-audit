@@ -785,6 +785,42 @@ check_resolved_config() {
     fi
 }
 
+check_tuned_profile() {
+    log_section "tuned-ppd power profile"
+
+    # Source of truth on an installed Kiro system:
+    #   /etc/tuned/ppd_base_profile must contain "performance"
+    #   tuned-adm active must report "throughput-performance"
+    # Background: the tuned package's pacman install writes ppd_base_profile=balanced,
+    # which short-circuits ppd.conf's `default=performance` fallback. kiro_final
+    # overwrites it with "performance" so the throughput-performance active_profile holds.
+    if [[ ! -f /etc/tuned/ppd_base_profile ]]; then
+        warn "/etc/tuned/ppd_base_profile missing (tuned not installed?)"
+        return
+    fi
+
+    local base
+    base=$(tr -d '[:space:]' < /etc/tuned/ppd_base_profile)
+    if [[ "${base}" == "performance" ]]; then
+        pass "ppd_base_profile = performance (kiro_final pin held)"
+    else
+        fail "ppd_base_profile = ${base} (expected performance — kiro_final pin lost)"
+    fi
+
+    if ! command -v tuned-adm >/dev/null 2>&1; then
+        warn "tuned-adm not found; cannot verify active profile"
+        return
+    fi
+
+    local active
+    active=$(tuned-adm active 2>/dev/null | awk -F': ' '{print $2}')
+    if [[ "${active}" == "throughput-performance" ]]; then
+        pass "tuned-adm active = throughput-performance"
+    else
+        fail "tuned-adm active = ${active:-unknown} (expected throughput-performance)"
+    fi
+}
+
 check_tumbler() {
     log_section "Tumbler / thumbnailing"
 
@@ -871,6 +907,7 @@ main() {
     check_permissions
     check_sysctl_security
     check_resolved_config
+    check_tuned_profile
     check_tumbler
     check_failed_units
     check_dev_rel
