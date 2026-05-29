@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## 2026.05.29
+
+### `kiro-audit` — new `check_chwd` surfaces the Calamares chwd-skip marker
+
+**What Changed**
+- New audit section warns when `/var/log/kiro-chwd-skipped.log` exists on the installed system. That marker is written by the Calamares chwd module when `chwd --autoconfigure` could not install the detected driver profile (e.g. a profile package missing from the configured repos), in which case the install now completes on the open driver instead of aborting. Without this check the fallback would be silent — the user would have a working but driver-less system and no signal as to why. Paired with the non-fatal chwd change in [kiro-calamares-config](/home/erik/KIRO/kiro-calamares-config/CHANGELOG.md): that change keeps the install alive, this check makes the skip visible.
+
+**Technical Details**
+- WARN (not FAIL): a skipped profile means the system is usable on nouveau/mesa, not broken. The marker body (reason + retry hint) is echoed indented under the WARN line. When no marker exists → PASS (covers both "autoconfigure succeeded" and `driver=free`).
+- Section title `chwd driver install`. Called between `check_nvidia` and `check_bootloader` in `main()`. Kernel-agnostic (no kernel-specific paths).
+- `bash -n` clean.
+
+**Files Modified**
+- `usr/local/bin/kiro-audit`
+
+### `kiro-audit` — `check_pacman_repos` now checks the cachyos opt-in state
+
+**What Changed**
+- `check_pacman_repos` gained a cachyos row. Kiro now ships `[cachyos]` commented out in the installed `/etc/pacman.conf` (kiro_final disables it after install — see [kiro-calamares-config](/home/erik/KIRO/kiro-calamares-config/CHANGELOG.md)). The audit reports: PASS when `[cachyos]` is commented (opt-in, as shipped); a soft WARN if it is active (legitimate only if the user re-enabled it on purpose) or absent entirely.
+
+**Technical Details**
+- Soft WARN rather than FAIL on an active repo: re-enabling cachyos is a valid user choice, so it must not read as a defect. Matches the existing "intended-state, advisory" tone of the repo checks.
+- chaotic-aur remains a FAIL-if-missing check: it is the update source that backs `linux-cachyos` once cachyos is off, so its absence is a real defect.
+
+**Files Modified**
+- `usr/local/bin/kiro-audit`
+
+---
+
 ## 2026.05.28
 
 ### `kiro-audit` — new `check_tuned_profile` for the tuned-ppd pin

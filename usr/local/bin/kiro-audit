@@ -396,6 +396,19 @@ check_pacman_repos() {
 
     grep -q '^\[nemesis_repo\]' /etc/pacman.conf && pass "nemesis_repo in pacman.conf" || fail "nemesis_repo missing from pacman.conf"
     grep -q '^\[chaotic-aur\]'  /etc/pacman.conf && pass "chaotic-aur in pacman.conf"  || fail "chaotic-aur missing from pacman.conf"
+
+    # cachyos is enabled DURING install (chwd pulls drivers from it) then commented
+    # out by kiro_final — shipped disabled/opt-in. chaotic-aur (above) backs
+    # linux-cachyos, so the default kernel keeps updating with cachyos off. An active
+    # [cachyos] here is legitimate only if the user re-enabled it on purpose.
+    if grep -q '^\[cachyos\]' /etc/pacman.conf; then
+        warn "cachyos repo is ENABLED (Kiro ships it commented; fine if you re-enabled it on purpose)"
+    elif grep -qE '^#\s*\[cachyos\]' /etc/pacman.conf; then
+        pass "cachyos repo commented out (opt-in, as shipped)"
+    else
+        warn "cachyos repo entry absent from pacman.conf (expected present-but-commented)"
+    fi
+
     # multilib is intentionally NOT shipped (gaming-only: Wine/Steam 32-bit libs);
     # users enable it via one click in ATT. No audit row — silence is correct.
 }
@@ -549,6 +562,24 @@ check_nvidia() {
     else
         pass "No NVIDIA GPU detected — DKMS packages not expected"
         pkg_missing nvidia-open-dkms && pass "nvidia-open-dkms not installed (no GPU, good)" || warn "nvidia-open-dkms installed but no NVIDIA GPU detected"
+    fi
+}
+
+check_chwd() {
+    log_section "chwd driver install"
+
+    # The Calamares chwd module leaves this breadcrumb when it could not install
+    # the detected driver profile (e.g. a profile package was missing from the
+    # configured repos). The install is allowed to finish on the open driver, so
+    # this is a WARN, not a FAIL — the system is usable but lacks the profile.
+    local marker="/var/log/kiro-chwd-skipped.log"
+    if [[ -f "${marker}" ]]; then
+        warn "chwd was skipped during install — open driver in use (see ${marker})"
+        while read -r line; do
+            echo "        ${line}"
+        done < "${marker}"
+    else
+        pass "No chwd skip marker (driver autoconfigure completed, or driver=free)"
     fi
 }
 
@@ -912,6 +943,7 @@ main() {
     check_failed_units
     check_dev_rel
     check_nvidia
+    check_chwd
     check_bootloader
     check_boot_and_updates
     check_package_integrity
