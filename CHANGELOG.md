@@ -2,6 +2,14 @@
 
 ## 2026.05.29
 
+### `kiro-audit` — verify cachyos keyring/mirrorlist when `[cachyos]` is active
+
+**What Changed**
+- `check_pacman_repos` now goes further when it finds `[cachyos]` uncommented in `pacman.conf`: it confirms `cachyos-keyring` is installed and `/etc/pacman.d/cachyos-mirrorlist` exists. An active cachyos repo without those breaks every pacman sync (signature rejection / missing `Include=` target). This is the verification hook for the new ATT Pacman-page CachyOS toggle, which bootstraps both (bundled packages + `setup-cachyos`, mirroring Chaotic-AUR) before enabling the repo.
+
+**Technical Details**
+- Two new checks inside the existing `if grep -q '^\[cachyos\]'` branch: `pkg_installed cachyos-keyring` → PASS/FAIL, and `[[ -f /etc/pacman.d/cachyos-mirrorlist ]]` → PASS/FAIL. The commented-out and absent branches are unchanged (still PASS/WARN — Kiro ships it commented, opt-in). No new `main()` entry; folded into `check_pacman_repos`. `bash -n` clean.
+
 ### `kiro-audit` — new `check_chwd` surfaces the Calamares chwd-skip marker
 
 **What Changed**

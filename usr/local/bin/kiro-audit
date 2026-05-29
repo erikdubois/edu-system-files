@@ -403,6 +403,16 @@ check_pacman_repos() {
     # [cachyos] here is legitimate only if the user re-enabled it on purpose.
     if grep -q '^\[cachyos\]' /etc/pacman.conf; then
         warn "cachyos repo is ENABLED (Kiro ships it commented; fine if you re-enabled it on purpose)"
+        # An active [cachyos] block REQUIRES the keyring (signature verification)
+        # and the mirrorlist file (the block's Include= target) — without them
+        # every pacman sync fails. ATT's cachyos toggle bootstraps both (bundled
+        # packages + setup-cachyos) before enabling; this verifies that held.
+        pkg_installed cachyos-keyring \
+            && pass "cachyos-keyring installed (required by active [cachyos])" \
+            || fail "cachyos enabled but cachyos-keyring missing — pacman will reject signatures"
+        [[ -f /etc/pacman.d/cachyos-mirrorlist ]] \
+            && pass "cachyos-mirrorlist present (required by active [cachyos])" \
+            || fail "cachyos enabled but /etc/pacman.d/cachyos-mirrorlist missing — Include= will break pacman"
     elif grep -qE '^#\s*\[cachyos\]' /etc/pacman.conf; then
         pass "cachyos repo commented out (opt-in, as shipped)"
     else
