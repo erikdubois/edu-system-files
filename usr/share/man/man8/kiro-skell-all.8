@@ -1,13 +1,13 @@
-.TH KIRO-SKELL 8 "2026-05-31" "Kiro" "Kiro System Tools"
+.TH KIRO-SKELL-ALL 8 "2026-05-31" "Kiro" "Kiro System Tools"
 .SH NAME
-kiro-skell \- copy /etc/skel to the home directory, backing up only the configs it overwrites
+kiro-skell-all \- copy /etc/skel to the home directory with a full ~/.config backup
 .SH SYNOPSIS
-.B kiro-skell
+.B kiro-skell-all
 [\fB\-h\fR|\fB\-\-help\fR]
 [\fB\-v\fR|\fB\-\-version\fR]
 [\fB\-d\fR|\fB\-\-dry\-run\fR]
 .SH DESCRIPTION
-.B kiro-skell
+.B kiro-skell-all
 copies the system skeleton directory
 .RI ( /etc/skel )
 into the current user's home directory.
@@ -15,25 +15,17 @@ This brings new default configuration files into use without losing
 existing customisations permanently.
 .PP
 Before copying,
-.B kiro-skell
-backs up only the
+.B kiro-skell-all
+backs up the
+.I whole
 .I ~/.config
-entries that
-.I /etc/skel/.config
-will overwrite \(em not the whole
-.IR ~/.config ,
-which can hold gigabytes of browser and application cache. The subset is
-copied to
-.I ~/.config-backup-YYYY.MM.DD-HH.MM.SS/.config/
-so the previous state of the overwritten configs can be restored. This is
-the fast default; for a complete
-.I ~/.config
-backup, see
-.BR kiro-skell-all (8).
-.PP
-The
+to
+.I ~/.config-backup-YYYY.MM.DD-HH.MM.SS
+so the previous state can be restored if needed. This is the thorough
+variant; for a faster run that backs up only the configs
 .I /etc/skel
-copy step itself is unchanged \(em it still overwrites everything.
+actually overwrites, see
+.BR kiro-skell (8).
 .PP
 In interactive mode (no
 .BR \-\-dry\-run )
@@ -44,7 +36,7 @@ mode the confirmation prompt is skipped and only the commands are
 displayed.
 .PP
 Useful when a tiling window manager is crashing: run
-.B kiro-skell
+.B kiro-skell-all
 in a TTY to restore default configs without needing a graphical session.
 .SH OPTIONS
 .TP
@@ -63,9 +55,7 @@ Skips the interactive confirmation prompt.
 Source skeleton directory.
 .TP
 .I ~/.config/
-The entries matching
-.I /etc/skel/.config
-are backed up before overwriting.
+Backed up in full before overwriting.
 .TP
 .I ~/.config-backup-YYYY.MM.DD-HH.MM.SS/
 Timestamped backup created by this script.
@@ -74,7 +64,7 @@ Preview what would be copied:
 .PP
 .RS 4
 .EX
-kiro-skell --dry-run
+kiro-skell-all --dry-run
 .EE
 .RE
 .PP
@@ -82,11 +72,11 @@ Run interactively:
 .PP
 .RS 4
 .EX
-kiro-skell
+kiro-skell-all
 .EE
 .RE
 .SH SEE ALSO
-.BR kiro-skell-all (8),
+.BR kiro-skell (8),
 .BR cp (1)
 .SH AUTHOR
 Erik Dubois <https://www.erikdubois.be>

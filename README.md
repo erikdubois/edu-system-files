@@ -21,26 +21,27 @@ System-level files for the Kiro distro — kernel parameters, udev rules, system
 
 ### `usr/local/bin/` — the `kiro-*` toolchain
 
-| Command                | Purpose                                                                 |
-|------------------------|-------------------------------------------------------------------------|
-| `kiro-audit`           | Audit a running install against expected Kiro defaults                  |
-| `kiro-diag`            | Diagnostic dump: ISO version, BIOS/UEFI, mounts, DM, kernels, NVIDIA    |
-| `kiro-enable-ssh`      | Enable + start `sshd.service`                                           |
-| `kiro-fix-gpg-conf`    | Reset `/etc/pacman.d/gnupg/` to a clean state                           |
-| `kiro-fix-mirrors`     | Repair `/etc/pacman.d/mirrorlist` from a known-good baseline            |
-| `kiro-fix-pacman-conf` | Restore Kiro's `pacman.conf` defaults                                   |
-| `kiro-fix-pacman-keys` | Re-init + re-populate pacman keyring                                    |
-| `kiro-get-mirrors`     | Refresh fast mirror list via reflector                                  |
-| `kiro-install-tools`   | Install Kiro's recommended additional packages                          |
-| `kiro-iso-version`     | Print `/etc/dev-rel` and rolling-release marker                         |
-| `kiro-lint`            | Lint Kiro-specific config files for known anti-patterns                 |
-| `kiro-probe`           | Inspect hardware / firmware / driver state                              |
-| `kiro-set-cores`       | Set the number of active CPU cores                                      |
-| `kiro-verify`          | Post-install verification — does the install match the ISO manifest?    |
-| `kiro-which-vga`       | Detect installed VGA card vendor (Intel / AMD / NVIDIA)                 |
-| `kiro-get-nemesis`     | Helper to fetch the nemesis_repo bootstrap                              |
-| `kiro-pci-latency`     | One-shot PCI latency tweak                                              |
-| `kiro-skell`           | `/etc/skel/` propagation helper                                         |
+| Command                | Purpose                                                              |
+|------------------------|----------------------------------------------------------------------|
+| `kiro-audit`           | Audit a running install against expected Kiro defaults               |
+| `kiro-diag`            | Diagnostic dump: ISO version, BIOS/UEFI, mounts, DM, kernels, NVIDIA |
+| `kiro-enable-ssh`      | Enable + start `sshd.service`                                        |
+| `kiro-fix-gpg-conf`    | Reset `/etc/pacman.d/gnupg/` to a clean state                        |
+| `kiro-fix-mirrors`     | Repair `/etc/pacman.d/mirrorlist` from a known-good baseline         |
+| `kiro-fix-pacman-conf` | Restore Kiro's `pacman.conf` defaults                                |
+| `kiro-fix-pacman-keys` | Re-init + re-populate pacman keyring                                 |
+| `kiro-get-mirrors`     | Refresh fast mirror list via reflector                               |
+| `kiro-install-tools`   | Install Kiro's recommended additional packages                       |
+| `kiro-iso-version`     | Print `/etc/dev-rel` and rolling-release marker                      |
+| `kiro-lint`            | Lint Kiro-specific config files for known anti-patterns              |
+| `kiro-probe`           | Inspect hardware / firmware / driver state                           |
+| `kiro-set-cores`       | Set the number of active CPU cores                                   |
+| `kiro-verify`          | Post-install verification — does the install match the ISO manifest? |
+| `kiro-which-vga`       | Detect installed VGA card vendor (Intel / AMD / NVIDIA)              |
+| `kiro-get-nemesis`     | Helper to fetch the nemesis_repo bootstrap                           |
+| `kiro-pci-latency`     | One-shot PCI latency tweak                                           |
+| `kiro-skell`           | Fast `/etc/skel/` restore — backs up only the configs it overwrites  |
+| `kiro-skell-all`       | Full `/etc/skel/` restore — backs up the whole `~/.config` first     |
 
 ### `usr/lib/systemd/`, `usr/share/backgrounds/`
 Bundled system-wide systemd units and Kiro wallpapers.

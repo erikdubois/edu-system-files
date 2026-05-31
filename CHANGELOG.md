@@ -2,6 +2,25 @@
 
 ## 2026.05.31
 
+### Split `kiro-skell` into a fast default + `kiro-skell-all` full-backup variant
+
+**What Changed**
+- The old `kiro-skell` (which backed up the **whole** `~/.config` before copying `/etc/skel`) was renamed to **`kiro-skell-all`** — behavior unchanged.
+- A new, faster **`kiro-skell`** is now the default: it backs up **only** the `~/.config` entries that `/etc/skel/.config` will overwrite, then copies all of `/etc/skel` as before. Full `~/.config` backups had become slow as caches grew (multi-GB); the only data at risk is what gets overwritten, so that is all the new default backs up.
+- The `/etc/skel` copy step is identical in both (overwrite all).
+
+**Technical Details**
+- New `kiro-skell` scans `/etc/skel/.config/*` at runtime and backs up each matching `~/.config/<name>` into `~/.config-backup-<stamp>/.config/`. Dynamic scan (not a hardcoded list) so it auto-adapts per ISO and never drifts stale.
+- Both scripts stay self-contained (inline helpers, no `kiro-common.sh`) so ATT's `skell` keeps fetching `kiro-skell` verbatim — `skell` now tracks the fast variant on the next `fetch-configs.sh` run.
+- Man pages: new `kiro-skell-all.8`; `kiro-skell.8` rewritten for the scoped behavior; both cross-reference via `SEE ALSO`. Fixed the stale `FILES` line that listed `kiro-common.sh` as a dependency.
+- No PKGBUILD change needed — the package `cp -a`'s `usr/` wholesale, so the renamed + new files ship automatically.
+- Verified: `bash -n` clean on both; `--dry-run` on each prints the expected backup scope.
+
+**Files Modified**
+- `usr/local/bin/kiro-skell` (new, fast) and `usr/local/bin/kiro-skell-all` (renamed from `kiro-skell`)
+- `usr/share/man/man8/kiro-skell.8` (rewritten), `usr/share/man/man8/kiro-skell-all.8` (new)
+- `README.md`, `CLAUDE.md`
+
 ### `kiro-skell` made self-contained — single source of truth for ATT's `skell`
 
 **What Changed**
