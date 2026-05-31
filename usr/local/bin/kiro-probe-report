@@ -63,6 +63,15 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Show an XFCE/desktop notification that the report is ready. Only meaningful in
+# the user's session, so the root-run probe instance (no session bus) is skipped.
+notify_ready() {
+    [[ ${EUID} -eq 0 || "${DRY_RUN}" == true ]] && return 0
+    command -v notify-send &>/dev/null || return 0
+    notify-send -a "Kiro" -i computer \
+        "Hardware Probe Report" "Your report is ready in your home directory." 2>/dev/null || true
+}
+
 # Open the report when --open is set, otherwise just print how to open it.
 open_report() {
     local f="$1"
@@ -147,25 +156,28 @@ main() {
     fi
 
     # No probe given: be self-sufficient about getting the user to a report.
+    local from_home=false
     if [[ -z "${PROBE}" ]]; then
         local home_report="${HOME}/hw-probe-report.html"
 
         # 1. A report already exists — just show it.
         if [[ -f "${home_report}" ]]; then
             log_info "Report already present: ${home_report}"
+            notify_ready
             open_report "${home_report}"
             log_success "$(basename "$0") done"
             exit 0
         fi
 
         # 2. A saved probe exists (current dir or home) — render it, no root needed.
-        if [[ -f "./hw.info.txz" ]]; then PROBE="./hw.info.txz";
-        elif [[ -d "./hw.info" ]]; then PROBE="./hw.info";
-        elif [[ -f "${HOME}/hw.info.txz" ]]; then PROBE="${HOME}/hw.info.txz";
-        elif [[ -d "${HOME}/hw.info" ]]; then PROBE="${HOME}/hw.info";
+        if [[ -f "./hw.info.txz" ]]; then PROBE="./hw.info.txz"; from_home=true;
+        elif [[ -d "./hw.info" ]]; then PROBE="./hw.info"; from_home=true;
+        elif [[ -f "${HOME}/hw.info.txz" ]]; then PROBE="${HOME}/hw.info.txz"; from_home=true;
+        elif [[ -d "${HOME}/hw.info" ]]; then PROBE="${HOME}/hw.info"; from_home=true;
         else
             # 3. Nothing yet — run a probe (asks for root) and let kiro-probe build it.
             probe_and_build
+            notify_ready
             open_report "${home_report}"
             log_success "$(basename "$0") done"
             exit 0
@@ -202,6 +214,7 @@ main() {
         chown "${SUDO_USER}:${SUDO_USER}" "${OUTPUT}" 2>/dev/null || true
     fi
 
+    [[ "${from_home}" == true ]] && notify_ready
     open_report "${OUTPUT}"
     log_success "$(basename "$0") done"
 }

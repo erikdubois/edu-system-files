@@ -2,6 +2,22 @@
 
 ## 2026.05.31
 
+### Renamed `kiro-skel` → `kiro-skell` (single-L → double-L) for naming consistency
+
+**What Changed**
+- The skel-restore command is now consistently spelled with two L's. The shipped binary was already `usr/local/bin/kiro-skell`, but its man page and README still called it `kiro-skel`; that mismatch is now closed. The double-L `kiro-skell` (Kiro) / `skell` (ATT) spelling is the canonical convention, recorded in `Kiro-HQ/ASSISTANT.md`.
+
+**Technical Details**
+- `/etc/skel` (the Linux skeleton path) is untouched — only the *command name* changed. The rename never touches filesystem paths.
+- Man page `usr/share/man/man8/kiro-skel.8` renamed to `kiro-skell.8` (via `git mv`); `.TH KIRO-SKEL` → `.TH KIRO-SKELL`, date bumped to 2026-05-31, all in-body `kiro-skel` references updated.
+- `README.md` tool table: `kiro-skel` → `kiro-skell`.
+- `usr/local/bin/kiro-skell` help/intro text referred to the command as bare `skel` ("run skel in a terminal") — updated to `kiro-skell` so it names a command that actually exists.
+
+**Files Modified**
+- `usr/share/man/man8/kiro-skell.8` (renamed from `kiro-skel.8` + content)
+- `README.md`
+- `usr/local/bin/kiro-skell`
+
 ### `kiro-probe` offline save + `kiro-probe-report` HTML insight page
 
 **What Changed**

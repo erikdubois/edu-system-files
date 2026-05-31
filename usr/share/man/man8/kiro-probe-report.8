@@ -33,7 +33,11 @@ nothing yet \(em a hardware probe is run via
 .BR "sudo kiro-probe \-\-save ~" ,
 which asks for root and, after a few minutes, builds the report.
 .PP
-Rendering an existing probe needs no root; only case 3 escalates.
+Rendering an existing probe needs no root; only case 3 escalates. When run in
+a desktop session, a notification is shown once the report is ready in the home
+directory (via
+.BR notify-send ,
+if available).
 .SH OPTIONS
 .TP
 .BR \-h ", " \-\-help
