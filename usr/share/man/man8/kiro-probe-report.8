@@ -6,25 +6,34 @@ kiro-probe-report \- generate an HTML insight report from a saved hw-probe packa
 [\fB\-h\fR|\fB\-\-help\fR]
 [\fB\-v\fR|\fB\-\-version\fR]
 [\fB\-d\fR|\fB\-\-dry\-run\fR]
+[\fB\-o\fR|\fB\-\-open\fR]
 [\fIPROBE\fR]
 [\fIOUTPUT\fR]
 .SH DESCRIPTION
 .B kiro-probe-report
-turns a saved
+produces a single self-contained, colour-coded HTML page for offline hardware
+insight: a system summary, a device-status overview (works / detected /
+failed), a grouped device table and collapsible raw log sections, read from a
 .B hw-probe
-package into a single self-contained, colour-coded HTML page for offline
-hardware insight. It reads the probe's
+package's
 .IR host ", " devices " and " logs/
-data and renders a system summary, a device-status overview
-(works / detected / failed), a grouped device table and collapsible raw
-log sections.
+data.
 .PP
-A probe is saved with
-.B kiro-probe \-\-save
-(or
-.BR "hw-probe \-all \-save" ).
-This command does not run a probe or contact any server; it only renders an
-existing one, so it needs no root privileges.
+Run with no
+.I PROBE
+argument it is self-sufficient and resolves, in order:
+.IP 1. 4
+an existing report at
+.IR ~/hw-probe-report.html " \(em it is shown as is;"
+.IP 2. 4
+a saved probe (\fI./hw.info.txz\fR, \fI./hw.info\fR, or the same in the home
+directory) \(em it is rendered, no root needed;
+.IP 3. 4
+nothing yet \(em a hardware probe is run via
+.BR "sudo kiro-probe \-\-save ~" ,
+which asks for root and, after a few minutes, builds the report.
+.PP
+Rendering an existing probe needs no root; only case 3 escalates.
 .SH OPTIONS
 .TP
 .BR \-h ", " \-\-help
@@ -36,16 +45,17 @@ Print version information and exit.
 .BR \-d ", " \-\-dry\-run
 Show what would be executed without writing any file.
 .TP
+.BR \-o ", " \-\-open
+Open the finished report in the default browser
+.RB ( xdg\-open ).
+.TP
 .I PROBE
 Path to an
 .I hw.info.txz
 archive or an
 .I hw.info
-directory. Defaults to
-.I ./hw.info.txz
-or
-.I ./hw.info
-in the current directory.
+directory. When omitted, the self-sufficient resolution described above is
+used.
 .TP
 .I OUTPUT
 HTML file to write. Defaults to

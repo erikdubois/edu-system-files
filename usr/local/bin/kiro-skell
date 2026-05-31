@@ -54,14 +54,14 @@ main() {
     done
 
     echo "##################################################################################"
-    echo "Skel copies /etc/skel to your home directory after making a backup of ~/.config"
+    echo "kiro-skell copies /etc/skel to your home directory after making a backup of ~/.config"
     echo
-    echo "New configurations often end up in /etc/skel — skel brings them into use."
+    echo "New configurations often end up in /etc/skel — kiro-skell brings them into use."
     echo
     echo "It will make a backup of ~/.config with a date/time stamp, then overwrite"
     echo "your configs with what is in /etc/skel."
     echo
-    echo "Useful when a tiling WM is crashing — run skel in a terminal or TTY to recover."
+    echo "Useful when a tiling WM is crashing — run kiro-skell in a terminal or TTY to recover."
     echo
     echo "##################################################################################"
 

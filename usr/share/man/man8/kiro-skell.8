@@ -1,13 +1,13 @@
-.TH KIRO-SKEL 8 "2026-05-19" "Kiro" "Kiro System Tools"
+.TH KIRO-SKELL 8 "2026-05-31" "Kiro" "Kiro System Tools"
 .SH NAME
-kiro-skel \- copy /etc/skel to the home directory with a ~/.config backup
+kiro-skell \- copy /etc/skel to the home directory with a ~/.config backup
 .SH SYNOPSIS
-.B kiro-skel
+.B kiro-skell
 [\fB\-h\fR|\fB\-\-help\fR]
 [\fB\-v\fR|\fB\-\-version\fR]
 [\fB\-d\fR|\fB\-\-dry\-run\fR]
 .SH DESCRIPTION
-.B kiro-skel
+.B kiro-skell
 copies the system skeleton directory
 .RI ( /etc/skel )
 into the current user's home directory.
@@ -15,7 +15,7 @@ This brings new default configuration files into use without losing
 existing customisations permanently.
 .PP
 Before copying,
-.B kiro-skel
+.B kiro-skell
 backs up
 .I ~/.config
 to
@@ -31,7 +31,7 @@ mode the confirmation prompt is skipped and only the two commands are
 displayed.
 .PP
 Useful when a tiling window manager is crashing: run
-.B kiro-skel
+.B kiro-skell
 in a TTY to restore default configs without needing a graphical session.
 .SH OPTIONS
 .TP
@@ -62,7 +62,7 @@ Preview what would be copied:
 .PP
 .RS 4
 .EX
-kiro-skel --dry-run
+kiro-skell --dry-run
 .EE
 .RE
 .PP
@@ -70,7 +70,7 @@ Run interactively:
 .PP
 .RS 4
 .EX
-kiro-skel
+kiro-skell
 .EE
 .RE
 .SH SEE ALSO

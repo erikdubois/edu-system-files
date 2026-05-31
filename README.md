@@ -40,7 +40,7 @@ System-level files for the Kiro distro — kernel parameters, udev rules, system
 | `kiro-which-vga`       | Detect installed VGA card vendor (Intel / AMD / NVIDIA)                 |
 | `kiro-get-nemesis`     | Helper to fetch the nemesis_repo bootstrap                              |
 | `kiro-pci-latency`     | One-shot PCI latency tweak                                              |
-| `kiro-skel`            | `/etc/skel/` propagation helper                                         |
+| `kiro-skell`           | `/etc/skel/` propagation helper                                         |
 
 ### `usr/lib/systemd/`, `usr/share/backgrounds/`
 Bundled system-wide systemd units and Kiro wallpapers.
