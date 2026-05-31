@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Kiro System Audit
+Comment=Check and repair Kiro system integrity
+Exec=xfce4-terminal --hold --title="Kiro System Audit" --command="kiro-audit"
+Icon=kiro
+Terminal=false
+Categories=System;Settings;X-XFCE-SettingsDialog;X-XFCE-SystemSettings;
+Keywords=kiro;audit;system;integrity;check;
