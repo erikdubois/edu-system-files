@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026.05.31
+
+### `kiro-audit` — detect virtual machine and close with an anti-panic note
+
+**What Changed**
+- `kiro-audit` now detects when it runs inside a virtual machine and ends its output with a clear sentence explaining that the audit is intended for real (bare-metal) hardware, so the expected live-ISO/VM failures (memtest86+ missing files, live-only cleanup checks, etc. — ~22 FAILs on the live ISO) don't read as a broken install. All checks still run; nothing is skipped.
+- The run header also gains a `Virt :` line naming the hypervisor (e.g. `oracle` for VirtualBox) when one is detected.
+
+**Technical Details**
+- Detection via `systemd-detect-virt --vm --quiet` in `main()` (local `is_vm`/`vm_type`); `|| true` guards the type lookup against the ERR trap. No new dependency — `systemd-detect-virt` ships with systemd.
+- The closing banner is emitted as the last output, after the PASS/WARN/FAIL summary and the normal completion banner, so it stays visible even when `exit 1` fires on failures. The summary tail was refactored to compute a local `rc` and `exit "${rc}"` once at the end instead of an inline `exit 1`. `bash -n` clean.
+- Verified live on the VirtualBox live-ISO VM (`liveuser`): `systemd-detect-virt` → `oracle`, banner prints after the 22-failure summary.
+
+**Files Modified**
+- `usr/local/bin/kiro-audit`
+
 ## 2026.05.29
 
 ### `kiro-audit` — verify cachyos keyring/mirrorlist when `[cachyos]` is active

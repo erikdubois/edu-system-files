@@ -929,6 +929,13 @@ main() {
     echo "  Kernel : $(uname -r)"
     echo "  Date   : $(date)"
 
+    local is_vm=false vm_type=""
+    if systemd-detect-virt --vm --quiet 2>/dev/null; then
+        is_vm=true
+        vm_type="$(systemd-detect-virt --vm 2>/dev/null || true)"
+        echo "  Virt   : ${vm_type} (virtual machine)"
+    fi
+
     check_kernel
     check_microcode
     check_mkinitcpio
@@ -965,18 +972,27 @@ main() {
     [[ "${FIX_MODE}" == true ]] && echo "  ${CYAN}FIXED: ${FIXED}${RESET}"
     echo
 
+    local rc=0
     if [[ ${FAIL} -gt 0 ]]; then
         if [[ "${FIX_MODE}" == true && ${FIXED} -gt 0 ]]; then
             log_warn "Audit found ${FAIL} failure(s); ${FIXED} fix(es) applied — re-run to confirm"
         else
             log_error "Audit completed with ${FAIL} failure(s)"
         fi
-        exit 1
+        rc=1
     elif [[ ${WARN} -gt 0 ]]; then
         log_warn "Audit completed with ${WARN} warning(s)"
     else
         log_success "$(basename "$0") — all checks passed"
     fi
+
+    # Keep this last: on a VM the failures above are mostly environment
+    # artifacts, so reassure the user rather than let them panic.
+    if [[ "${is_vm}" == true ]]; then
+        log_warn "You are running on a virtual machine (${vm_type}) — kiro-audit is intended for real (bare-metal) hardware. Failures above are likely VM/live-environment artifacts, not a broken install."
+    fi
+
+    exit "${rc}"
 }
 
 main "$@"
