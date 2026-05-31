@@ -26,12 +26,35 @@
 - New files `usr/share/applications/kiro-audit.desktop` and `usr/share/applications/kiro-sysinfo.desktop`. Category line `System;Settings;X-XFCE-SettingsDialog;X-XFCE-SystemSettings;` — `X-XFCE-SettingsDialog` is what surfaces them in the Settings Manager, `X-XFCE-SystemSettings` groups them under **System** (without it they land in *Other*).
 - Exec uses `alacritty -e bash -c "<cmd>; echo; read -rp 'Press Enter to close...'"` instead of relying on the XFCE terminal helper (`exo-open`): on the live ISO that helper is set to an undefined `custom-TerminalEmulator`, so `Terminal=true` launchers silently fail. Explicit alacritty sidesteps it and works across DEs.
 - `inxi -Fxxxz`: `-F` full report, `-xxx` maximum extra data, `-z` filters MAC/IP/identifying data. `inxi` already ships in `archiso/packages.x86_64`.
+- Both add `TryExec=` (`kiro-audit` / `inxi`) so the entry auto-hides if the tool is removed.
 - Both files pass `desktop-file-validate`; verified live in the Settings Manager under System.
+
+### Settings Manager — surface 5 stock system tools in the System overview
+
+**What Changed**
+- Five standard tools that previously lived only in the app menu now also appear in the System group of the Settings Manager, so users get a single "what can I change / what's installed" overview (a deliberate feel-of-control selling point carried over from ArcoLinux). They remain in the app menu exactly as before — these entries are additive, not replacements:
+  - **Firewall** (`firewall-config`) — Kiro ships firewalld default-on, so a firewall GUI in System Settings is the most natural fit.
+  - **Timeshift** (`timeshift-launcher`) — backups / system restore.
+  - **Disks** (`gnome-disks`) — drive / partition / SMART management.
+  - **Advanced Network Configuration** (`nm-connection-editor`).
+  - **Disk Usage Analyzer** (`baobab`).
+- GParted was intentionally left menu-only (destructive root tool — avoid accidental clicks). hardinfo2 left out too (the inxi entry covers system info).
+
+**Technical Details**
+- Implemented as same-desktop-ID override copies shipped to `usr/local/share/applications/` (higher XDG_DATA_DIRS precedence than `/usr/share/applications`), so the menu entry stays identical — no duplicate icon — and gains the settings categories. Full upstream files copied verbatim to preserve translations.
+- **Two categories are required**, not one: `xfce4-settings-manager` only shows an entry that has **both** the freedesktop `Settings` main category **and** `X-XFCE-SettingsDialog`. `X-XFCE-SettingsDialog` alone is insufficient — this is why Timeshift (`System;` only) and Disks (`...Utility...`) initially did not appear until `Settings;` was added. `X-XFCE-SystemSettings` places them in the **System** group.
+- Every override carries `TryExec=<binary>` so that if the user removes the underlying app, the Settings Manager auto-hides the now-dead entry (the shipped `.desktop` is owned by edu-system-files, not the app's package, so it would otherwise persist as a broken icon).
+- All five pass `desktop-file-validate`; verified deployed live on the VM.
 
 **Files Modified**
 - `usr/local/bin/kiro-audit`
 - `usr/share/applications/kiro-audit.desktop` (new)
 - `usr/share/applications/kiro-sysinfo.desktop` (new)
+- `usr/local/share/applications/firewall-config.desktop` (new)
+- `usr/local/share/applications/timeshift-gtk.desktop` (new)
+- `usr/local/share/applications/org.gnome.DiskUtility.desktop` (new)
+- `usr/local/share/applications/nm-connection-editor.desktop` (new)
+- `usr/local/share/applications/org.gnome.baobab.desktop` (new)
 
 ## 2026.05.29
 

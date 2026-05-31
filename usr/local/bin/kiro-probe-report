@@ -1,0 +1,150 @@
+#!/bin/bash
+set -Euo pipefail
+##################################################################################################################
+# Author    : Erik Dubois
+# Website   : https://kiroproject.be
+##################################################################################################################
+#
+#   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
+#
+#   Purpose:
+#   Turns a saved hw-probe package (an hw.info directory or an hw.info.txz
+#   archive) into a single self-contained, colour-coded HTML insight page:
+#   system summary, device status (works/detected/failed) and the raw logs.
+#
+#   Why: the uploaded probe lives on linux-hardware.org behind a URL; this
+#   gives the same data as one readable local file for offline diagnostics,
+#   without needing the server or an upload.
+#
+##################################################################################################################
+
+# shellcheck source=/usr/local/lib/kiro-common.sh
+if [[ -f /usr/local/lib/kiro-common.sh ]]; then
+    source /usr/local/lib/kiro-common.sh
+else
+    echo "ERROR: kiro-common.sh not found" >&2
+    exit 1
+fi
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+DRY_RUN=false
+PROBE=""
+OUTPUT=""
+
+# Locate the Python generator next to this script's lib, with an installed fallback.
+GENERATOR="$(realpath "${SCRIPT_DIR}/../lib/kiro-probe-report.py" 2>/dev/null || true)"
+[[ -f "${GENERATOR}" ]] || GENERATOR="/usr/local/lib/kiro-probe-report.py"
+
+WORKDIR=""
+INFO_DIR=""
+
+# Resolve a saved probe (.txz or directory) to the directory that holds the 'host'
+# file, storing it in INFO_DIR. Sets INFO_DIR="" when no probe data is found.
+# Must NOT run in a command-substitution subshell: it sets WORKDIR so the EXIT
+# trap can remove any temp dir it extracted into.
+resolve_info_dir() {
+    local src="$1" tmp
+    INFO_DIR=""
+    if [[ "${src}" == *.txz || "${src}" == *.tar.xz ]]; then
+        tmp="$(mktemp -d)"
+        WORKDIR="${tmp}"
+        tar -xf "${src}" -C "${tmp}"
+        if [[ -f "${tmp}/host" ]]; then INFO_DIR="${tmp}";
+        elif [[ -f "${tmp}/hw.info/host" ]]; then INFO_DIR="${tmp}/hw.info"; fi
+    elif [[ -f "${src}/host" ]]; then INFO_DIR="${src}";
+    elif [[ -f "${src}/hw.info/host" ]]; then INFO_DIR="${src}/hw.info"; fi
+}
+
+cleanup() {
+    [[ -n "${WORKDIR}" && -d "${WORKDIR}" ]] && rm -rf "${WORKDIR}"
+    return 0
+}
+trap cleanup EXIT
+
+main() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                show_help "$(basename "$0")" \
+                    "Generate an HTML insight report from a saved hw-probe package" \
+                    "[--help] [--version] [--dry-run] [PROBE] [OUTPUT]" \
+                    "    PROBE               hw.info.txz archive or hw.info directory
+                        (default: ./hw.info.txz or ./hw.info)
+    OUTPUT              HTML file to write (default: next to PROBE)"
+                exit 0
+                ;;
+            -v|--version)
+                show_version "$(basename "$0")"
+                exit 0
+                ;;
+            -d|--dry-run)
+                DRY_RUN=true
+                log_info "Dry-run mode enabled — no changes will be made"
+                ;;
+            -*)
+                echo "${RED}Unknown option: $1${RESET}" >&2
+                exit 1
+                ;;
+            *)
+                if [[ -z "${PROBE}" ]]; then PROBE="$1";
+                elif [[ -z "${OUTPUT}" ]]; then OUTPUT="$1";
+                else echo "${RED}Unexpected argument: $1${RESET}" >&2; exit 1; fi
+                ;;
+        esac
+        shift
+    done
+
+    if ! command -v python3 &>/dev/null; then
+        echo "${RED}python3 is required but not found.${RESET}" >&2
+        exit 1
+    fi
+    if [[ ! -f "${GENERATOR}" ]]; then
+        echo "${RED}Generator not found: ${GENERATOR}${RESET}" >&2
+        exit 1
+    fi
+
+    # Default probe: a saved package in the current directory.
+    if [[ -z "${PROBE}" ]]; then
+        if [[ -f "./hw.info.txz" ]]; then PROBE="./hw.info.txz";
+        elif [[ -d "./hw.info" ]]; then PROBE="./hw.info";
+        else
+            echo "${RED}No probe given and no ./hw.info.txz or ./hw.info found.${RESET}" >&2
+            echo "Run 'kiro-probe --save' first, or pass a path." >&2
+            exit 1
+        fi
+    fi
+    if [[ ! -e "${PROBE}" ]]; then
+        echo "${RED}Probe not found: ${PROBE}${RESET}" >&2
+        exit 1
+    fi
+
+    resolve_info_dir "${PROBE}"
+    local info_dir="${INFO_DIR}"
+    if [[ -z "${info_dir}" ]]; then
+        echo "${RED}No hw-probe data (a 'host' file) found in: ${PROBE}${RESET}" >&2
+        exit 1
+    fi
+
+    # Default output: alongside the source probe, named hw-probe-report.html.
+    if [[ -z "${OUTPUT}" ]]; then
+        local base
+        if [[ -f "${PROBE}" ]]; then base="$(dirname "${PROBE}")"; else base="$(dirname "$(realpath "${info_dir}")")"; fi
+        OUTPUT="${base}/hw-probe-report.html"
+    fi
+
+    log_section "Generate hardware probe report"
+    log_info "Source : ${PROBE}"
+    log_info "Output : ${OUTPUT}"
+
+    execute_or_dryrun "Render HTML report" python3 "${GENERATOR}" "${info_dir}" "${OUTPUT}"
+
+    # Hand the file back to the invoking user when run via sudo.
+    if [[ "${DRY_RUN}" == false && -n "${SUDO_USER:-}" && -f "${OUTPUT}" ]]; then
+        chown "${SUDO_USER}:${SUDO_USER}" "${OUTPUT}" 2>/dev/null || true
+    fi
+
+    [[ "${DRY_RUN}" == false ]] && log_info "Open with: xdg-open \"${OUTPUT}\""
+    log_success "$(basename "$0") done"
+}
+
+main "$@"

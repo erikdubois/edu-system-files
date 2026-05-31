@@ -8,10 +8,13 @@ set -Euo pipefail
 #   DO NOT JUST RUN THIS. EXAMINE AND JUDGE. RUN AT YOUR OWN RISK.
 #
 #   Purpose:
-#   Uploads a hardware probe to linux-hardware.org (via hw-probe).
+#   Uploads a hardware probe to linux-hardware.org (via hw-probe). With
+#   --save it instead saves the probe package locally (offline use) and
+#   generates a readable HTML insight report from it.
 #
 #   Why: builds community-visible hardware compatibility data for Kiro
-#   installs — useful for the project's hardware support story.
+#   installs; --save covers the offline case (server down, no upload) and
+#   gives the same data as one readable local file.
 #
 ##################################################################################################################
 
@@ -25,15 +28,18 @@ fi
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 DRY_RUN=false
+DO_SAVE=false
+SAVE_DIR="."
 
 main() {
-    for arg in "$@"; do
-        case "$arg" in
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
             -h|--help)
                 show_help "$(basename "$0")" \
                     "Upload a hardware probe to linux-hardware.org" \
-                    "[--help] [--version] [--dry-run]" \
-                    ""
+                    "[--help] [--version] [--dry-run] [--save [DIR]]" \
+                    "    -s, --save [DIR]    Save the probe locally (default: current dir) instead of
+                        uploading, then generate an HTML insight report from it"
                 exit 0
                 ;;
             -v|--version)
@@ -44,11 +50,16 @@ main() {
                 DRY_RUN=true
                 log_info "Dry-run mode enabled — no changes will be made"
                 ;;
+            -s|--save)
+                DO_SAVE=true
+                if [[ $# -gt 1 && "$2" != -* ]]; then SAVE_DIR="$2"; shift; fi
+                ;;
             *)
-                echo "${RED}Unknown option: $arg${RESET}" >&2
+                echo "${RED}Unknown option: $1${RESET}" >&2
                 exit 1
                 ;;
         esac
+        shift
     done
 
     if ! pacman -Qi hw-probe &>/dev/null; then
@@ -56,7 +67,25 @@ main() {
         execute_or_dryrun "Install hw-probe" sudo pacman -S --noconfirm --needed hw-probe
     fi
 
-    execute_or_dryrun "Run hardware probe and upload" sudo -E /usr/bin/hw-probe -all -upload
+    if [[ "${DO_SAVE}" == true ]]; then
+        execute_or_dryrun "Save hardware probe to ${SAVE_DIR}" \
+            sudo -E /usr/bin/hw-probe -all -save "${SAVE_DIR}"
+
+        # Hand the saved artifacts back to the invoking user when run via sudo.
+        if [[ "${DRY_RUN}" == false && -n "${SUDO_USER:-}" ]]; then
+            chown -R "${SUDO_USER}:${SUDO_USER}" "${SAVE_DIR}/hw.info" "${SAVE_DIR}/hw.info.txz" 2>/dev/null || true
+        fi
+
+        # Generate the readable report from the just-saved package.
+        local report_cmd
+        report_cmd="$(realpath "${SCRIPT_DIR}/kiro-probe-report" 2>/dev/null || true)"
+        [[ -x "${report_cmd}" ]] || report_cmd="kiro-probe-report"
+        local report_args=("${SAVE_DIR}/hw.info.txz")
+        [[ "${DRY_RUN}" == true ]] && report_args+=(--dry-run)
+        execute_or_dryrun "Generate HTML report" "${report_cmd}" "${report_args[@]}"
+    else
+        execute_or_dryrun "Run hardware probe and upload" sudo -E /usr/bin/hw-probe -all -upload
+    fi
 
     log_success "$(basename "$0") done"
 }

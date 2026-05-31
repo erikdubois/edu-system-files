@@ -4,6 +4,7 @@ Version=1.0
 Name=System Information
 Comment=Full system and hardware report (inxi)
 Exec=alacritty --title "System Information" -e bash -c "inxi -Fxxxz; echo; read -rp 'Press Enter to close...'"
+TryExec=inxi
 Icon=computer
 Terminal=false
 Categories=System;Settings;X-XFCE-SettingsDialog;X-XFCE-SystemSettings;
