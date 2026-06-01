@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 2026.06.01
+
+### kiro-audit: microcode check is now VM-aware
+
+**What Changed**
+- `check_microcode` no longer reports `FAIL  No microcode image found in /boot` on a virtual machine. A VM has no real CPU to update, so there is legitimately no `intel-ucode.img` / `amd-ucode.img` in `/boot` — flagging it as a failure produced a false negative on every VirtualBox/QEMU audit. On a VM it now reports `PASS  No microcode image in /boot — expected, this is a virtual machine (not real metal)`. On bare metal a missing image is still a real `FAIL`.
+
+**Technical Details**
+- Added a `systemd-detect-virt --vm --quiet` branch between the AMD `elif` and the final `fail`. The function detects the VM itself (the `is_vm` flag in `main()` is a local, not visible inside `check_microcode`).
+- Verified `bash -n` clean; the dev box (bare metal) correctly keeps the FAIL path.
+
+**Files Modified**
+- `usr/local/bin/kiro-audit`
+
 ## 2026.05.31
 
 ### Split `kiro-skell` into a fast default + `kiro-skell-all` full-backup variant

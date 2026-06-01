@@ -247,6 +247,8 @@ check_microcode() {
     elif [[ -f /boot/amd-ucode.img ]]; then
         pass "amd-ucode.img present in /boot"
         pkg_missing intel-ucode && pass "intel-ucode not installed (AMD system)" || warn "intel-ucode also installed on AMD system"
+    elif systemd-detect-virt --vm --quiet 2>/dev/null; then
+        pass "No microcode image in /boot — expected, this is a virtual machine (not real metal)"
     else
         fail "No microcode image found in /boot"
     fi
