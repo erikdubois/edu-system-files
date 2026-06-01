@@ -2,6 +2,17 @@
 
 ## 2026.06.01
 
+### New tools: `kiro-set-cores-min1` / `kiro-set-cores-min2` — leave 1–2 cores free for makepkg
+
+**What Changed**
+- Added `usr/local/bin/kiro-set-cores-min1` and `kiro-set-cores-min2`, companions to `kiro-set-cores`. Where `kiro-set-cores` sets `MAKEFLAGS=-jN` to *all* cores, these set it to `N-1` and `N-2` respectively (8 cores → `-j7` / `-j6`), leaving 1 or 2 cores free so the desktop stays responsive during long AUR builds. Both also flip `PKGEXT` to `.pkg.tar.zst` like the original.
+- Each ships the standard `--help` / `--version` / `--dry-run` flags and a man page (`kiro-set-cores-min1.8`, `kiro-set-cores-min2.8`). Added to the README command table. These back the ATT full-package menu entries and run standalone from the terminal.
+
+**Technical Details**
+- Cores read via `nproc`; target = `nproc - RESERVE` (RESERVE=1/2), floored to `-j1` with a warn on low-core boxes.
+- The sed is broadened from the original's narrow `#MAKEFLAGS="-j2"` match to `s/^#?MAKEFLAGS=.*/MAKEFLAGS="-jN"/` (with `-E`), so it works whether the line is the commented default or already set by a prior `kiro-set-cores` run, and is idempotent. Verified the `#-- Make Flags:` documentation comment is left untouched (only the `#MAKEFLAGS=` line carries `MAKEFLAGS=`).
+- Both scripts source `kiro-common.sh` like the rest of the suite; verified `bash -n`, `--help`, and `--dry-run` on the dev box (16 cores → `-j15` / `-j14`). No PKGBUILD change — the package `cp -a`'s `usr/` wholesale.
+
 ### New tool: `kiro-calamares-log` — summarise the Calamares installer log
 
 **What Changed**

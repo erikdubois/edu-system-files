@@ -36,7 +36,9 @@ System-level files for the Kiro distro — kernel parameters, udev rules, system
 | `kiro-iso-version`     | Print `/etc/dev-rel` and rolling-release marker                      |
 | `kiro-lint`            | Lint Kiro-specific config files for known anti-patterns              |
 | `kiro-probe`           | Inspect hardware / firmware / driver state                           |
-| `kiro-set-cores`       | Set the number of active CPU cores                                   |
+| `kiro-set-cores`       | Set makepkg.conf MAKEFLAGS to all CPU cores                          |
+| `kiro-set-cores-min1`  | Set makepkg.conf MAKEFLAGS to all cores minus one (1 core free)      |
+| `kiro-set-cores-min2`  | Set makepkg.conf MAKEFLAGS to all cores minus two (2 cores free)     |
 | `kiro-verify`          | Post-install verification — does the install match the ISO manifest? |
 | `kiro-which-vga`       | Detect installed VGA card vendor (Intel / AMD / NVIDIA)              |
 | `kiro-get-nemesis`     | Helper to fetch the nemesis_repo bootstrap                           |
