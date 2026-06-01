@@ -15,6 +15,16 @@
 - Warning filter keeps only `[2]` lines carrying an actual `WARNING` token (drops the bare C++ function-signature context lines), then removes a known-benign set. `--scrub` anchors the IP regex with word boundaries so it doesn't clip the dotted Calamares version string.
 - Log is world-readable, so no root needed. Verified end-to-end on a real VM install (VERDICT: INSTALL CLEAN, 0 errors). No PKGBUILD change — the package `cp -a`'s `usr/` wholesale.
 
+### kiro-calamares-log: `--upload` paste host switched from 0x0.st to paste.c-net.org
+
+**What Changed**
+- The `--upload` target moved from `https://0x0.st` to `https://paste.c-net.org`. 0x0.st is blanket-blocked as a malware/abuse-hosting domain by mainstream threat-intel blocklists — confirmed in the field that ISP filters (Telenet Safesurf/Safespot, powered by SAM Seamless Network), Proximus's filter, and Bitdefender all block it independently — so `--upload` failed for most users regardless of their network, not because of a script bug.
+- `--upload` failures now print curl's actual error (e.g. connection reset, block page) instead of a blank "failed", so a future host-level block is diagnosable.
+
+**Technical Details**
+- paste.c-net.org takes a **raw POST body** and returns the paste URL directly, so the call changed from multipart `curl -F'file=@-;filename=...'` to `curl --data-binary @- "${PASTE_SERVICE}/"`.
+- Replaced the `2>/dev/null` on the upload curl with a temp file capturing stderr, surfaced in the failure message. Verified the new host round-trips (upload → fetch back byte-for-byte) and is not DNS-hijacked. `--save` remains the always-reliable fallback since *any* anonymous paste host can eventually be category-flagged.
+
 ### kiro-audit: microcode check is now VM-aware
 
 **What Changed**
