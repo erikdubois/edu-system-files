@@ -24,6 +24,7 @@ System-level files for the Kiro distro — kernel parameters, udev rules, system
 | Command                | Purpose                                                              |
 |------------------------|----------------------------------------------------------------------|
 | `kiro-audit`           | Audit a running install against expected Kiro defaults               |
+| `kiro-calamares-log`   | Summarise the Calamares installer log (timeline, warnings, verdict)  |
 | `kiro-diag`            | Diagnostic dump: ISO version, BIOS/UEFI, mounts, DM, kernels, NVIDIA |
 | `kiro-enable-ssh`      | Enable + start `sshd.service`                                        |
 | `kiro-fix-gpg-conf`    | Reset `/etc/pacman.d/gnupg/` to a clean state                        |

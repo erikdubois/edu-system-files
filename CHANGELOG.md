@@ -2,6 +2,19 @@
 
 ## 2026.06.01
 
+### New tool: `kiro-calamares-log` — summarise the Calamares installer log
+
+**What Changed**
+- Added `usr/local/bin/kiro-calamares-log`, a companion to `kiro-audit`. It reads `/var/log/Calamares.log` and prints a short readable summary instead of the ~1600-line raw dump: header (version, branding, target disk, user, host), the install job **timeline with per-job duration** (Kiro modules marked `*`), real **WARNINGs** (benign Qt/chcon/EFI-probe/branding noise filtered), **ERRORs/tracebacks**, and a one-line **CLEAN / FAILED verdict**.
+- Switches: `--full` (append raw log), `--scrub` (redact host/user/IP), `--save [FILE]` (write colour-free plain text), `--upload` (post the scrubbed summary to a paste host and print the URL — implies `--scrub`). Plus the standard `--help` / `--version`.
+- Ships a man page `usr/share/man/man8/kiro-calamares-log.8` and is listed in the README command table.
+
+**Technical Details**
+- Parses only the **last** `=== START CALAMARES` session (the log accumulates across launches). Completion is detected by Calamares reaching its final job ("Saving files for later"), so the normal 42/43 job count is correctly read as CLEAN (job 43 is Calamares' internal finalize), not "incomplete".
+- Per-job duration = gap to the next job's timestamp; the last job is bounded by the final log timestamp.
+- Warning filter keeps only `[2]` lines carrying an actual `WARNING` token (drops the bare C++ function-signature context lines), then removes a known-benign set. `--scrub` anchors the IP regex with word boundaries so it doesn't clip the dotted Calamares version string.
+- Log is world-readable, so no root needed. Verified end-to-end on a real VM install (VERDICT: INSTALL CLEAN, 0 errors). No PKGBUILD change — the package `cp -a`'s `usr/` wholesale.
+
 ### kiro-audit: microcode check is now VM-aware
 
 **What Changed**
